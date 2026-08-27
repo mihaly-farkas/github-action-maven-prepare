@@ -80,6 +80,10 @@ test('Maven Prepare GitHub Action reads the Maven project coordinates from the p
   expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-group-id', mavenGroupId);
   expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-artifact-id', mavenArtifactId);
   expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-version', mavenVersion);
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-major-version', '1');
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-minor-version', '2');
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-patch-version', '3');
+  expect(core.setOutput).toHaveBeenCalledWith('maven-is-snapshot', 'true');
   expect(core.info).toHaveBeenCalledWith(
     chalk.cyanBright('Maven artifact Group ID:      ') + chalk.greenBright(mavenGroupId),
   );
@@ -88,6 +92,12 @@ test('Maven Prepare GitHub Action reads the Maven project coordinates from the p
   );
   expect(core.info).toHaveBeenCalledWith(
     chalk.cyanBright('Maven artifact Version:       ') + chalk.greenBright(mavenVersion),
+  );
+  expect(core.info).toHaveBeenCalledWith(chalk.cyanBright('Maven artifact Major Version: ') + chalk.greenBright('1'));
+  expect(core.info).toHaveBeenCalledWith(chalk.cyanBright('Maven artifact Minor Version: ') + chalk.greenBright('2'));
+  expect(core.info).toHaveBeenCalledWith(chalk.cyanBright('Maven artifact Patch Version: ') + chalk.greenBright('3'));
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Maven is SNAPSHOT:            ') + chalk.greenBright('true'),
   );
 });
 

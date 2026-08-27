@@ -75,6 +75,22 @@ const run = async () => {
   core.info(chalk.cyanBright('Maven artifact Artifact ID:   ') + chalk.greenBright(artifactId));
   core.info(chalk.cyanBright('Maven artifact Version:       ') + chalk.greenBright(version));
 
+  // Split Maven version into components and expose them as action outputs
+  const numericVersion = version.split('-')[0] || version;
+  const versionComponents = numericVersion.split('.');
+  const mavenArtifactMajorVersion = versionComponents[0] || '';
+  const mavenArtifactMinorVersion = versionComponents[1] || '';
+  const mavenArtifactPatchVersion = versionComponents[2] || '';
+  const mavenIsSnapshot = version.endsWith('-SNAPSHOT').toString();
+  core.setOutput('maven-artifact-major-version', mavenArtifactMajorVersion);
+  core.setOutput('maven-artifact-minor-version', mavenArtifactMinorVersion);
+  core.setOutput('maven-artifact-patch-version', mavenArtifactPatchVersion);
+  core.setOutput('maven-is-snapshot', mavenIsSnapshot);
+  core.info(chalk.cyanBright('Maven artifact Major Version: ') + chalk.greenBright(mavenArtifactMajorVersion));
+  core.info(chalk.cyanBright('Maven artifact Minor Version: ') + chalk.greenBright(mavenArtifactMinorVersion));
+  core.info(chalk.cyanBright('Maven artifact Patch Version: ') + chalk.greenBright(mavenArtifactPatchVersion));
+  core.info(chalk.cyanBright('Maven is SNAPSHOT:            ') + chalk.greenBright(mavenIsSnapshot));
+
   // Check if the Maven artifact id is the same as the GitHub repository name; if not, fail with error
   const githubRepositoryName = github.context.repo.repo.split('/').pop() || '';
   if (artifactId !== githubRepositoryName) {
