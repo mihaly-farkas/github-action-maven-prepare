@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# Set strict mode for bash
+set -euo pipefail
+
+# Include the Husky helper script
+. "$(dirname "$0")/h"
+
+# Bright ANSI color escape sequences.
+BRIGHT_MAGENTA=$'\e[1;35m'
+BRIGHT_CYAN=$'\e[1;36m'
+
+# Reset all ANSI attributes.
+NO_COLOR=$'\e[0m'
+
+# Named colors
+MESSAGE_COLOR="${BRIGHT_CYAN}"
+VALUE_COLOR="${BRIGHT_MAGENTA}"
+
+#######################################################################################################################
+# Pre-commit hook script
+#######################################################################################################################
+
+echo "${MESSAGE_COLOR}[pre-commit] Running code fixers...${NO_COLOR}"
+set -x
+npm run fix
+{ set +x; } 2>/dev/null
+echo
+
+echo "${MESSAGE_COLOR}[pre-commit] Running tests...${NO_COLOR}"
+set -x
+npm run test
+{ set +x; } 2>/dev/null
+echo
+
+echo "${MESSAGE_COLOR}[pre-commit] Removing dev dependencies from the local ${VALUE_COLOR}node_modules/${MESSAGE_COLOR} folder...${NO_COLOR}"
+set -x
+npm install --omit=dev
+{ set +x; } 2>/dev/null
+echo
+
+echo "${MESSAGE_COLOR}[pre-commit] Enabling worktree tracking for ${VALUE_COLOR}node_modules/.package-lock.json${MESSAGE_COLOR}...${NO_COLOR}"
+set -x
+git update-index --no-skip-worktree node_modules/.package-lock.json
+{ set +x; } 2>/dev/null
+echo
+
+echo "${MESSAGE_COLOR}[pre-commit] Force adding the ${VALUE_COLOR}node_modules/${MESSAGE_COLOR} folder to the commit...${NO_COLOR}"
+set -x
+git add -f node_modules/
+{ set +x; } 2>/dev/null
+echo
+
+echo "${MESSAGE_COLOR}Committing the changes...${NO_COLOR}"
+echo

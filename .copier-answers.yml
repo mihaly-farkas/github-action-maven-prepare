@@ -1,0 +1,11 @@
+# Changes here will be overwritten by Copier
+_commit: 02293af
+_src_path: gh:mihaly-farkas/copier-template-github-action-typescript
+githubActionDescription: GitHub Action for preparing a Maven build
+githubActionExampleStepName: Prepare Maven
+githubActionName: Maven Prepare
+githubRepositoryName: github-action-maven-prepare
+githubRepositoryOwner: mihaly-farkas
+licenceOwner: Mihály Farkas
+licenseYearStart: 2026
+

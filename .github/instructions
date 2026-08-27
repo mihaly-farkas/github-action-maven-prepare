@@ -1,0 +1,31 @@
+## Commit Message Rules
+
+Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#specification) specification for Git commit messages.
+
+### Generic Rules
+
+- If the commit fixes a bug, use `fix` as the type.
+- If the commit changes functionality or UI, use `feat` as the type.
+- If the commit adds or changes tests, use `test` as the type.
+- If the commit is code style or formatting only, use `style` as the type.
+- If the commit is code changes that do not modify functionality, use `refactor` as the type.
+- If the commit is documentation only, use `docs` as the type.
+- If the commit is build system or external dependencies related, use `build` as the type.
+- If the commit is CI configuration files and scripts (e.g., GitHub Actions), use `ci` as the type.
+- If the commit is general maintenance, chores, or non-code tasks, use `chore` as the type.
+- If the commit is performance-focused, use `perf` as the type.
+
+### GitHub Specific Rules
+
+- If the commit changes the `README.md` file only, use `docs(readme)` as the type with scope.
+- If the commit changes the `.github/dependabot.yml` file only, use `chore(dependabot)` as the type with scope.
+- If the commit changes files in the `.github/skills/` directory, use `chore(ai-skills)` as the type with scope.
+- If the commit changes the `.github/instructions` file only, use `chore(ai-instructions)` as the type with scope.
+
+### Node.js Specific Rules
+
+- If the commit changes files in the `package.json` and `package-lock.json` file only, use `build(node)` as the type with scope.
+
+### Local Development Tool Specific Rules
+
+- If the commit changes files in the `.husky/` directory, use `chore(husky)` as the type with scope.

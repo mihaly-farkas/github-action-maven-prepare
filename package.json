@@ -1,0 +1,56 @@
+{
+  "name": "@mihaly-farkas/github-action-maven-prepare",
+  "description": "GitHub Action for preparing a Maven build",
+  "keywords": [
+    "github-actions"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mihaly-farkas/github-action-maven-prepare.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">= 24.0.0"
+  },
+  "main": "index.mts",
+  "scripts": {
+    "clean": "npm run clean:dir && npm run clean:gts",
+    "clean:dir": "rimraf dist",
+    "clean:gts": "npx gts clean",
+    "test": "npm run clean && npm run test:tsc && npm run test:gts && npm run test:unit",
+    "test:tsc": "npx tsc --noEmit",
+    "test:gts": "npx gts check",
+    "test:unit": "npx vitest run",
+    "fix": "npm run clean && npm run test:tsc && npm run fix:gts",
+    "fix:gts": "npx gts fix",
+    "dependency-management:show-major-updates": "npx npm-check-updates",
+    "dependency-management:show-minor-updates": "npx npm-check-updates --target semver",
+    "dependency-management:update-minor-dependencies": "npx npm-check-updates --target minor --upgrade && npm install",
+    "prepare": "command -v husky >/dev/null && husky || true"
+  },
+  "dependencies": {
+    "@actions/core": "3.0.1",
+    "@actions/exec": "3.0.0",
+    "@actions/github": "9.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "gts": "7.0.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.4.1",
+    "npm-check-updates": "23.1.0",
+    "rimraf": "6.1.3",
+    "tsx": "4.23.12",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": "gts fix",
+    "*.json": "prettier --write"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "fsevents": true
+  }
+}

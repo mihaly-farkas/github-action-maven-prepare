@@ -1,0 +1,6 @@
+name: "github-action-maven-prepare"
+description: >
+  GitHub Action for preparing a Maven build
+runs:
+  using: "node24"
+  main: "index.mts"

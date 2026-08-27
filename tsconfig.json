@@ -1,0 +1,22 @@
+{
+  "extends": "./node_modules/gts/tsconfig-google.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "build",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": [
+    "index.mts",
+    "index.spec.mts",
+    "vitest.config.mts"
+  ],
+  "exclude": [
+    ".local",
+    "node_modules",
+    "build"
+  ]
+}

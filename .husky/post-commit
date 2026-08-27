@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# Set strict mode for bash
+set -euo pipefail
+
+# Include the Husky helper script
+. "$(dirname "$0")/h"
+
+# Bright ANSI color escape sequences.
+BRIGHT_MAGENTA=$'\e[1;35m'
+BRIGHT_CYAN=$'\e[1;36m'
+
+# Reset all ANSI attributes.
+NO_COLOR=$'\e[0m'
+
+# Named colors
+MESSAGE_COLOR="${BRIGHT_CYAN}"
+VALUE_COLOR="${BRIGHT_MAGENTA}"
+
+#######################################################################################################################
+# Post-commit hook script
+#######################################################################################################################
+
+echo "${MESSAGE_COLOR}[post-commit] Restoring dev dependencies to the ${VALUE_COLOR}node_modules/${MESSAGE_COLOR} folder...${NO_COLOR}"
+set -x
+npm install
+{ set +x; } 2>/dev/null
+echo
+
+echo "${MESSAGE_COLOR}[post-commit] Skipping worktree tracking for ${VALUE_COLOR}node_modules/.package-lock.json${MESSAGE_COLOR}...${NO_COLOR}"
+set -x
+git update-index --skip-worktree node_modules/.package-lock.json
+{ set +x; } 2>/dev/null
+echo
+
+echo "${MESSAGE_COLOR}Git commit result${NO_COLOR}"
