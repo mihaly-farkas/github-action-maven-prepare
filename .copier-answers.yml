@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: d7f1fa0
+_commit: ef2db13
 _src_path: gh:mihaly-farkas/copier-template-github-action-typescript
 githubActionDescription: GitHub Action for preparing a Maven build
 githubActionExampleStepName: Prepare Maven

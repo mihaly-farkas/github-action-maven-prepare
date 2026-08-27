@@ -1,4 +1,4 @@
-import gtsPrettier from 'gts/.prettierrc.json' assert {type: 'json'};
+import gtsPrettier from 'gts/.prettierrc.json' with {type: 'json'};
 
 export default {
   ...gtsPrettier,

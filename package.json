@@ -18,12 +18,13 @@
     "clean": "npm run clean:dir && npm run clean:gts",
     "clean:dir": "rimraf dist",
     "clean:gts": "npx gts clean",
-    "test": "npm run clean && npm run test:tsc && npm run test:gts && npm run test:unit",
+    "build": "npx tsc",
+    "test": "npm run clean && npm run build && npm run test:tsc && npm run test:gts && npm run test:unit",
     "test:tsc": "npx tsc --noEmit",
-    "test:gts": "npx gts check",
+    "test:gts": "npx gts check '**/*.mts' '**/*.mjs'",
     "test:unit": "npx vitest run",
     "fix": "npm run clean && npm run test:tsc && npm run fix:gts",
-    "fix:gts": "npx gts fix",
+    "fix:gts": "npx gts fix '**/*.mts' '**/*.mjs'",
     "dependency-management:show-major-updates": "npx npm-check-updates",
     "dependency-management:show-minor-updates": "npx npm-check-updates --target semver",
     "dependency-management:update-minor-dependencies": "npx npm-check-updates --target minor --upgrade && npm install",
@@ -46,7 +47,7 @@
     "vitest": "4.1.11"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": "gts fix",
+    "*.{ts,tsx,mts,mtsx,js,jsx}": "gts fix",
     "*.json": "prettier --write"
   },
   "allowScripts": {

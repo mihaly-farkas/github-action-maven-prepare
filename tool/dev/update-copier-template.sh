@@ -28,17 +28,11 @@ copier update --vcs-ref main --defaults
 { set +x; } 2>/dev/null
 echo
 
-# If there are changes, add and commit them to Git
+# If there are changes, add them to git
 if ! git diff --quiet; then
   echo "${MESSAGE_COLOR}Adding changes to git...${NO_COLOR}"
   set -x
   git add . -A
-  { set +x; } 2>/dev/null
-  echo
-
-  echo "${MESSAGE_COLOR}Committing changes to git...${NO_COLOR}"
-  set -x
-  git commit --message="chore(maintenance): update Copier template"
   { set +x; } 2>/dev/null
   echo
 fi
