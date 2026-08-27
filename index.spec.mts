@@ -8,6 +8,7 @@ vi.mock('@actions/core', () => ({
   setFailed: vi.fn(),
   setOutput: vi.fn(),
   info: vi.fn(),
+  debug: vi.fn(),
   getInput: vi.fn(),
 }));
 
@@ -215,8 +216,8 @@ test('Maven Prepare GitHub Action sets git-is-main-branch output to true when cu
     ) {
       return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
     }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', '--abbrev-ref', 'HEAD'])) {
-      return Promise.resolve({stdout: mainBranch, stderr: '', exitCode: 0});
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
+      return Promise.resolve({stdout: `* ${mainBranch}\n`, stderr: '', exitCode: 0});
     }
     return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
   });
@@ -245,8 +246,76 @@ test('Maven Prepare GitHub Action sets git-is-main-branch output to false when c
     ) {
       return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
     }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', '--abbrev-ref', 'HEAD'])) {
-      return Promise.resolve({stdout: 'feature/my-branch', stderr: '', exitCode: 0});
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
+      return Promise.resolve({stdout: '* feature/my-branch\n', stderr: '', exitCode: 0});
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', 'false');
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Is on main branch:            ') + chalk.greenBright('false'),
+  );
+});
+
+test('Maven Prepare GitHub Action sets git-is-main-branch output to true in detached HEAD when commit is contained in origin/main', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+
+  vi.mocked(core.getInput).mockReturnValue('main');
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
+      return Promise.resolve({
+        stdout: '* (HEAD detached at abc1234)\n  remotes/origin/main\n',
+        stderr: '',
+        exitCode: 0,
+      });
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', 'true');
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Is on main branch:            ') + chalk.greenBright('true'),
+  );
+});
+
+test('Maven Prepare GitHub Action sets git-is-main-branch output to false in detached HEAD when commit is not contained in main branch', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+
+  vi.mocked(core.getInput).mockReturnValue('main');
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
+      return Promise.resolve({
+        stdout: '* (HEAD detached at abc1234)\n  remotes/origin/feature/my-branch\n',
+        stderr: '',
+        exitCode: 0,
+      });
     }
     return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
   });
