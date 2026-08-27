@@ -3,6 +3,9 @@ import {exec, getExecOutput} from '@actions/exec';
 import * as github from '@actions/github';
 import chalk from 'chalk';
 
+// Force colored output even when stdout is not detected as a TTY.
+chalk.level = 1;
+
 const run = async () => {
   // Ensure the Maven Wrapper has executable permissions
   await exec('chmod', ['+x', './mvnw']);
