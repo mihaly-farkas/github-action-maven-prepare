@@ -37,10 +37,9 @@ const run = async () => {
     .split('\n')
     .map(line => line.replace(/^\*\s*/, '').trim())
     .filter(line => line.length > 0 && !line.startsWith('(HEAD detached'));
-
+  core.debug(`Input 'main-branch': ${mainBranch}`);
   core.debug(`Branches containing HEAD (raw): ${JSON.stringify(gitBranchesResult.stdout)}`);
   core.debug(`Branches containing HEAD (parsed): ${JSON.stringify(gitBranches)}`);
-
   const isOnMainBranch = gitBranches.some(branch => {
     if (branch === mainBranch) {
       return true;
@@ -48,13 +47,11 @@ const run = async () => {
     if (!branch.startsWith('remotes/')) {
       return false;
     }
-
     const remoteBranch = branch.slice('remotes/'.length);
     const remoteSeparatorIndex = remoteBranch.indexOf('/');
     if (remoteSeparatorIndex < 0) {
       return false;
     }
-
     return remoteBranch.slice(remoteSeparatorIndex + 1) === mainBranch;
   });
   core.debug(`Main branch input: ${mainBranch}; isOnMainBranch: ${isOnMainBranch.toString()}`);
