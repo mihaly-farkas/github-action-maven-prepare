@@ -16,9 +16,9 @@ const run = async () => {
   const groupId = groupIdResult.stdout.trim();
   const artifactId = artifactIdResult.stdout.trim();
   const version = versionResult.stdout.trim();
-  core.setOutput('maven-group-id', groupId);
-  core.setOutput('maven-artifact-id', artifactId);
-  core.setOutput('maven-version', version);
+  core.setOutput('maven-artifact-group-id', groupId);
+  core.setOutput('maven-artifact-artifact-id', artifactId);
+  core.setOutput('maven-artifact-version', version);
 
   // Check if the Maven artifact id is the same as the GitHub repository name; if not, fail with error
   const githubRepositoryName = github.context.repo.repo.split('/').pop() || '';
@@ -28,6 +28,17 @@ const run = async () => {
     );
     return;
   }
+
+  // Get git metadata and expose them as action outputs
+  const gitOptions = {silent: true};
+  const [gitCommitShortHashResult, gitCommitLongHashResult, gitCommitTimestampResult] = await Promise.all([
+    getExecOutput('git', ['rev-parse', '--short', 'HEAD'], gitOptions),
+    getExecOutput('git', ['rev-parse', 'HEAD'], gitOptions),
+    getExecOutput('git', ['show', '-s', '--format=%ct', 'HEAD'], gitOptions),
+  ]);
+  core.setOutput('git-commit-short-hash', gitCommitShortHashResult.stdout.trim());
+  core.setOutput('git-commit-long-hash', gitCommitLongHashResult.stdout.trim());
+  core.setOutput('git-commit-timestamp', gitCommitTimestampResult.stdout.trim());
 };
 
 try {

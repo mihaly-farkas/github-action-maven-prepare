@@ -72,9 +72,9 @@ test('Maven Prepare GitHub Action reads the Maven project coordinates from the p
   await importAction();
 
   // ASSERT
-  expect(core.setOutput).toHaveBeenCalledWith('maven-group-id', mockGroupId);
-  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-id', mockArtifactId);
-  expect(core.setOutput).toHaveBeenCalledWith('maven-version', mockVersion);
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-group-id', mockGroupId);
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-artifact-id', mockArtifactId);
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-version', mockVersion);
 });
 
 test('Maven Prepare GitHub Action fails when exec throws an error', async () => {
@@ -140,4 +140,40 @@ test('Maven Prepare GitHub Action fails when the Maven artifact id does not matc
   expect(core.setFailed).toHaveBeenCalledWith(
     `Maven artifact id "${artifactId}" does not match GitHub repository name "${repoName}".`,
   );
+});
+
+test('Maven Prepare GitHub Action reads git metadata and exposes them as action outputs', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const gitCommitShortHash = 'abc1234';
+  const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
+  const gitCommitTimestamp = '1787864679';
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', '--short', 'HEAD'])) {
+      return Promise.resolve({stdout: gitCommitShortHash, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'HEAD'])) {
+      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['show', '-s', '--format=%ct', 'HEAD'])) {
+      return Promise.resolve({stdout: gitCommitTimestamp, stderr: '', exitCode: 0});
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('git-commit-short-hash', gitCommitShortHash);
+  expect(core.setOutput).toHaveBeenCalledWith('git-commit-long-hash', gitCommitLongHash);
+  expect(core.setOutput).toHaveBeenCalledWith('git-commit-timestamp', gitCommitTimestamp);
 });

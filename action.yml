@@ -2,12 +2,18 @@ name: "github-action-maven-prepare"
 description: >
   GitHub Action for preparing a Maven build
 outputs:
-  maven-group-id:
+  maven-artifact-group-id:
     description: "The Maven project groupId read from pom.xml"
-  maven-artifact-id:
+  maven-artifact-artifact-id:
     description: "The Maven project artifactId read from pom.xml"
-  maven-version:
+  maven-artifact-version:
     description: "The Maven project version read from pom.xml"
+  git-commit-short-hash:
+    description: "The short hash of the current git commit"
+  git-commit-long-hash:
+    description: "The full hash of the current git commit"
+  git-commit-timestamp:
+    description: "The Unix timestamp of the current git commit"
 runs:
   using: "node24"
   main: "index.mts"
