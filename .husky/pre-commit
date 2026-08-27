@@ -3,9 +3,6 @@
 # Set strict mode for bash
 set -euo pipefail
 
-# Include the Husky helper script
-. "$(dirname "$0")/h"
-
 # Bright ANSI color escape sequences.
 BRIGHT_MAGENTA=$'\e[1;35m'
 BRIGHT_CYAN=$'\e[1;36m'

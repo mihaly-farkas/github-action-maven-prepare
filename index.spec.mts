@@ -2,10 +2,12 @@ import {test, expect, vi, type Mock} from 'vitest';
 import * as core from '@actions/core';
 import {exec, getExecOutput} from '@actions/exec';
 import * as github from '@actions/github';
+import chalk from 'chalk';
 
 vi.mock('@actions/core', () => ({
   setFailed: vi.fn(),
   setOutput: vi.fn(),
+  info: vi.fn(),
 }));
 
 vi.mock('@actions/exec', () => ({
@@ -41,29 +43,29 @@ test('Maven Prepare GitHub Action ensures the Maven Wrapper has executable permi
 
 test('Maven Prepare GitHub Action reads the Maven project coordinates from the pom.xml file and exposes them as action outputs', async () => {
   // ARRANGE
-  const mockGroupId = 'com.example';
-  const mockArtifactId = 'my-app';
-  const mockVersion = '1.2.3-SNAPSHOT';
+  const mavenGroupId = 'com.example';
+  const mavenArtifactId = 'my-app';
+  const mavenVersion = '1.2.3-SNAPSHOT';
 
   (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
     if (
       cmd === './mvnw' &&
       JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])
     ) {
-      return Promise.resolve({stdout: mockGroupId, stderr: '', exitCode: 0});
+      return Promise.resolve({stdout: mavenGroupId, stderr: '', exitCode: 0});
     }
     if (
       cmd === './mvnw' &&
       JSON.stringify(args) ===
         JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
     ) {
-      return Promise.resolve({stdout: mockArtifactId, stderr: '', exitCode: 0});
+      return Promise.resolve({stdout: mavenArtifactId, stderr: '', exitCode: 0});
     }
     if (
       cmd === './mvnw' &&
       JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])
     ) {
-      return Promise.resolve({stdout: mockVersion, stderr: '', exitCode: 0});
+      return Promise.resolve({stdout: mavenVersion, stderr: '', exitCode: 0});
     }
     return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
   });
@@ -72,9 +74,18 @@ test('Maven Prepare GitHub Action reads the Maven project coordinates from the p
   await importAction();
 
   // ASSERT
-  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-group-id', mockGroupId);
-  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-artifact-id', mockArtifactId);
-  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-version', mockVersion);
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-group-id', mavenGroupId);
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-artifact-id', mavenArtifactId);
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-version', mavenVersion);
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Maven artifact Group ID:      ') + chalk.greenBright(mavenGroupId),
+  );
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Maven artifact Artifact ID:   ') + chalk.greenBright(mavenArtifactId),
+  );
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Maven artifact Version:       ') + chalk.greenBright(mavenVersion),
+  );
 });
 
 test('Maven Prepare GitHub Action fails when exec throws an error', async () => {
@@ -176,4 +187,13 @@ test('Maven Prepare GitHub Action reads git metadata and exposes them as action 
   expect(core.setOutput).toHaveBeenCalledWith('git-commit-short-hash', gitCommitShortHash);
   expect(core.setOutput).toHaveBeenCalledWith('git-commit-long-hash', gitCommitLongHash);
   expect(core.setOutput).toHaveBeenCalledWith('git-commit-timestamp', gitCommitTimestamp);
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Git commit short hash:        ') + chalk.greenBright(gitCommitShortHash),
+  );
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Git commit long hash:         ') + chalk.greenBright(gitCommitLongHash),
+  );
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Git commit timestamp:         ') + chalk.greenBright(gitCommitTimestamp),
+  );
 });
