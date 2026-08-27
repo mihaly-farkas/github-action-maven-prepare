@@ -1,6 +1,7 @@
 import { test, expect, vi, type Mock } from 'vitest';
 import * as core from '@actions/core';
 import { exec, getExecOutput } from '@actions/exec';
+import * as github from '@actions/github';
 
 vi.mock('@actions/core', () => ({
   setFailed: vi.fn(),
@@ -10,6 +11,14 @@ vi.mock('@actions/core', () => ({
 vi.mock('@actions/exec', () => ({
   exec: vi.fn(),
   getExecOutput: vi.fn(),
+}));
+
+vi.mock('@actions/github', () => ({
+  context: {
+    repo: {
+      repo: 'owner/my-app',
+    },
+  },
 }));
 
 async function importAction(): Promise<void> {
@@ -73,5 +82,48 @@ test('Maven Prepare GitHub Action fails when exec throws an error', async () => 
   expect(core.setFailed).toHaveBeenCalledTimes(1);
   expect(core.setFailed).toHaveBeenCalledWith(
     `Action failed with error: Error: ${errorMessage}`
+  );
+});
+
+test('Maven Prepare GitHub Action does not fail when the Maven artifact id matches the GitHub repository name', async () => {
+  // ARRANGE
+  const repositoryName = 'github-action-maven-prepare';
+
+  vi.mocked(github.context).repo.repo = repositoryName;
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (cmd === './mvnw' && JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])) {
+      return Promise.resolve({ stdout: repositoryName, stderr: '', exitCode: 0 });
+    }
+    return Promise.resolve({ stdout: '', stderr: '', exitCode: 0 });
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setFailed).not.toHaveBeenCalledWith(
+    expect.stringContaining('does not match GitHub repository name')
+  );
+});
+
+test('Maven Prepare GitHub Action fails when the Maven artifact id does not match the GitHub repository name', async () => {
+  // ARRANGE
+  const repoName = github.context.repo.repo.split('/').pop() || '';
+  const artifactId = 'different-artifact-id';
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (cmd === './mvnw' && JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])) {
+      return Promise.resolve({ stdout: artifactId, stderr: '', exitCode: 0 });
+    }
+    return Promise.resolve({ stdout: '', stderr: '', exitCode: 0 });
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setFailed).toHaveBeenCalledWith(
+    `Maven artifact id "${artifactId}" does not match GitHub repository name "${repoName}".`
   );
 });
