@@ -29,3 +29,11 @@ Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/
 ### Local Development Tool Specific Rules
 
 - If the commit changes files in the `.husky/` directory, use `chore(husky)` as the type with scope.
+
+### Commit Message Formulation
+
+- When adding a new feature, do not specify that a test was also created for it.
+  Examples:
+  - **Correct:** `feat: set executable permission for Maven Wrapper`
+
+    **Incorrect:** `feat: set executable permission for Maven Wrapper and corresponding tests`
