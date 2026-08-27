@@ -38,13 +38,24 @@ echo
 
 echo "${MESSAGE_COLOR}[pre-commit] Force adding the ${VALUE_COLOR}node_modules/${MESSAGE_COLOR} folder to the commit...${NO_COLOR}"
 set -x
-git add -f node_modules/
+git add -f -A node_modules/
 { set +x; } 2>/dev/null
 echo
 
 echo "${MESSAGE_COLOR}[pre-commit] Excluding work dirs from the commit...${NO_COLOR}"
+echo "git rm --cached -r node_modules/.bin/ 2>/dev/null"
+git rm --cached -r node_modules/.bin/ 2>/dev/null || true
+echo "git rm --cached node_modules/.package-lock.json"
+git rm --cached  node_modules/.package-lock.json 2>/dev/null || true
+echo "git rm --cached -r node_modules/.vite/ 2>/dev/null"
+git rm --cached -r node_modules/.vite/ 2>/dev/null || true
+echo "git rm --cached -r node_modules/.vite-temp/ 2>/dev/null"
+git rm --cached -r node_modules/.vite-temp/ 2>/dev/null || true
+echo
+
+echo "${MESSAGE_COLOR}[pre-commit] Git status after the changes...${NO_COLOR}"
 set -x
-git rm --cached -r node_modules/.bin/ node_modules/.package-lock.json node_modules/.vite/ node_modules/.vite-temp/ 2>/dev/null || true
+git status
 { set +x; } 2>/dev/null
 echo
 
