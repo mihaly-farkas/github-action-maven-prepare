@@ -1,6 +1,11 @@
 name: "github-action-maven-prepare"
 description: >
   GitHub Action for preparing a Maven build
+inputs:
+  main-branch:
+    description: "The name of the main branch of the repository"
+    required: false
+    default: "main"
 outputs:
   maven-artifact-group-id:
     description: "The Maven project groupId read from pom.xml"
