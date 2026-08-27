@@ -1,6 +1,13 @@
 name: "github-action-maven-prepare"
 description: >
   GitHub Action for preparing a Maven build
+outputs:
+  maven-group-id:
+    description: "The Maven project groupId read from pom.xml"
+  maven-artifact-id:
+    description: "The Maven project artifactId read from pom.xml"
+  maven-version:
+    description: "The Maven project version read from pom.xml"
 runs:
   using: "node24"
   main: "index.mts"
