@@ -339,3 +339,95 @@ test('Maven Prepare GitHub Action sets git-is-main-branch output to false in det
     chalk.cyanBright('Is on main branch:            ') + chalk.greenBright('false'),
   );
 });
+
+test('Maven Prepare GitHub Action sets maven-artifact-publish to false when a release artifact is already published', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const mavenGroupId = 'com.example';
+  const mavenVersion = '1.2.3';
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: mavenGroupId, stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: mavenVersion, stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['dependency:get', `-Dartifact=${mavenGroupId}:${repositoryName}:${mavenVersion}`, '--quiet'])
+    ) {
+      return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-publish', 'false');
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Maven artifact should publish: ') + chalk.greenBright('false'),
+  );
+});
+
+test('Maven Prepare GitHub Action sets maven-artifact-publish to true when a release artifact is not published yet', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const mavenGroupId = 'com.example';
+  const mavenVersion = '1.2.3';
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: mavenGroupId, stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: mavenVersion, stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['dependency:get', `-Dartifact=${mavenGroupId}:${repositoryName}:${mavenVersion}`, '--quiet'])
+    ) {
+      return Promise.resolve({stdout: '', stderr: '', exitCode: 1});
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-publish', 'true');
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Maven artifact should publish: ') + chalk.greenBright('true'),
+  );
+});

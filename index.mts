@@ -100,7 +100,21 @@ const run = async () => {
     return;
   }
 
-  core.info('implementing...');
+  // Determine if the Maven artifact should be published
+  let mavenArtifactPublish = 'true';
+  if (mavenIsSnapshot === 'false') {
+    const dependencyGetResult = await getExecOutput(
+      './mvnw',
+      ['dependency:get', `-Dartifact=${groupId}:${artifactId}:${version}`, '--quiet'],
+      {
+        ...mvnOptions,
+        ignoreReturnCode: true,
+      },
+    );
+    mavenArtifactPublish = (dependencyGetResult.exitCode !== 0).toString();
+  }
+  core.setOutput('maven-artifact-publish', mavenArtifactPublish);
+  core.info(chalk.cyanBright('Maven artifact should publish: ') + chalk.greenBright(mavenArtifactPublish));
 };
 
 try {
