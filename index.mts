@@ -65,23 +65,23 @@ const run = async () => {
     getExecOutput('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'], mvnOptions),
     getExecOutput('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'], mvnOptions),
   ]);
-  const groupId = groupIdResult.stdout.trim();
-  const artifactId = artifactIdResult.stdout.trim();
-  const version = versionResult.stdout.trim();
-  core.setOutput('maven-artifact-group-id', groupId);
-  core.setOutput('maven-artifact-artifact-id', artifactId);
-  core.setOutput('maven-artifact-version', version);
-  core.info(chalk.cyanBright('Maven artifact Group ID:       ') + chalk.greenBright(groupId));
-  core.info(chalk.cyanBright('Maven artifact Artifact ID:    ') + chalk.greenBright(artifactId));
-  core.info(chalk.cyanBright('Maven artifact Version:        ') + chalk.greenBright(version));
+  const mavenArtifactGroupId = groupIdResult.stdout.trim();
+  const mavenArtifactId = artifactIdResult.stdout.trim();
+  const mavenArtifactVersion = versionResult.stdout.trim();
+  core.setOutput('maven-artifact-group-id', mavenArtifactGroupId);
+  core.setOutput('maven-artifact-id', mavenArtifactId);
+  core.setOutput('maven-artifact-version', mavenArtifactVersion);
+  core.info(chalk.cyanBright('Maven artifact Group ID:       ') + chalk.greenBright(mavenArtifactGroupId));
+  core.info(chalk.cyanBright('Maven artifact Artifact ID:    ') + chalk.greenBright(mavenArtifactId));
+  core.info(chalk.cyanBright('Maven artifact Version:        ') + chalk.greenBright(mavenArtifactVersion));
 
   // Split Maven version into components and expose them as action outputs
-  const numericVersion = version.split('-')[0] || version;
+  const numericVersion = mavenArtifactVersion.split('-')[0] || mavenArtifactVersion;
   const versionComponents = numericVersion.split('.');
   const mavenArtifactMajorVersion = versionComponents[0] || '';
   const mavenArtifactMinorVersion = versionComponents[1] || '';
   const mavenArtifactPatchVersion = versionComponents[2] || '';
-  const mavenIsSnapshot = version.endsWith('-SNAPSHOT').toString();
+  const mavenIsSnapshot = mavenArtifactVersion.endsWith('-SNAPSHOT').toString();
   core.setOutput('maven-artifact-major-version', mavenArtifactMajorVersion);
   core.setOutput('maven-artifact-minor-version', mavenArtifactMinorVersion);
   core.setOutput('maven-artifact-patch-version', mavenArtifactPatchVersion);
@@ -93,9 +93,9 @@ const run = async () => {
 
   // Check if the Maven artifact id is the same as the GitHub repository name; if not, fail with error
   const githubRepositoryName = github.context.repo.repo.split('/').pop() || '';
-  if (artifactId !== githubRepositoryName) {
+  if (mavenArtifactId !== githubRepositoryName) {
     core.setFailed(
-      `Maven artifact id "${artifactId}" does not match GitHub repository name "${githubRepositoryName}".`,
+      `Maven artifact id "${mavenArtifactId}" does not match GitHub repository name "${githubRepositoryName}".`,
     );
     return;
   }
@@ -105,7 +105,7 @@ const run = async () => {
   if (mavenIsSnapshot === 'false') {
     const dependencyGetResult = await getExecOutput(
       './mvnw',
-      ['dependency:get', `-Dartifact=${groupId}:${artifactId}:${version}`, '--quiet'],
+      ['dependency:get', `-Dartifact=${mavenArtifactGroupId}:${mavenArtifactId}:${mavenArtifactVersion}`, '--quiet'],
       {
         ...mvnOptions,
         ignoreReturnCode: true,

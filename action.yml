@@ -9,7 +9,7 @@ inputs:
 outputs:
   maven-artifact-group-id:
     description: "The Maven project groupId read from pom.xml"
-  maven-artifact-artifact-id:
+  maven-artifact-id:
     description: "The Maven project artifactId read from pom.xml"
   maven-artifact-version:
     description: "The Maven project version read from pom.xml"

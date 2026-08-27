@@ -78,7 +78,7 @@ test('Maven Prepare GitHub Action reads the Maven project coordinates from the p
 
   // ASSERT
   expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-group-id', mavenGroupId);
-  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-artifact-id', mavenArtifactId);
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-id', mavenArtifactId);
   expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-version', mavenVersion);
   expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-major-version', '1');
   expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-minor-version', '2');
