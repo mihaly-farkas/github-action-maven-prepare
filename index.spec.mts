@@ -8,6 +8,7 @@ vi.mock('@actions/core', () => ({
   setFailed: vi.fn(),
   setOutput: vi.fn(),
   info: vi.fn(),
+  getInput: vi.fn(),
 }));
 
 vi.mock('@actions/exec', () => ({
@@ -30,6 +31,7 @@ async function importAction(): Promise<void> {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(core.getInput).mockReturnValue('main');
   (getExecOutput as unknown as Mock).mockResolvedValue({stdout: '', stderr: '', exitCode: 0});
 });
 
@@ -195,5 +197,66 @@ test('Maven Prepare GitHub Action reads git metadata and exposes them as action 
   );
   expect(core.info).toHaveBeenCalledWith(
     chalk.cyanBright('Git commit timestamp:         ') + chalk.greenBright(gitCommitTimestamp),
+  );
+});
+
+test('Maven Prepare GitHub Action sets git-is-main-branch output to true when current branch matches main-branch input', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const mainBranch = 'main';
+
+  vi.mocked(core.getInput).mockReturnValue(mainBranch);
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', '--abbrev-ref', 'HEAD'])) {
+      return Promise.resolve({stdout: mainBranch, stderr: '', exitCode: 0});
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', 'true');
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Is on main branch:            ') + chalk.greenBright('true'),
+  );
+});
+
+test('Maven Prepare GitHub Action sets git-is-main-branch output to false when current branch differs from main-branch input', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+
+  vi.mocked(core.getInput).mockReturnValue('main');
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', '--abbrev-ref', 'HEAD'])) {
+      return Promise.resolve({stdout: 'feature/my-branch', stderr: '', exitCode: 0});
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', 'false');
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Is on main branch:            ') + chalk.greenBright('false'),
   );
 });
