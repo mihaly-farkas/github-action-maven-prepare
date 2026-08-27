@@ -18,15 +18,9 @@ VALUE_COLOR="${BRIGHT_MAGENTA}"
 # Pre-commit hook script
 #######################################################################################################################
 
-echo "${MESSAGE_COLOR}[pre-commit] Running code fixers...${NO_COLOR}"
+echo "${MESSAGE_COLOR}[pre-commit] Running pre-commit script...${NO_COLOR}"
 set -x
-npm run fix
-{ set +x; } 2>/dev/null
-echo
-
-echo "${MESSAGE_COLOR}[pre-commit] Running tests...${NO_COLOR}"
-set -x
-npm run test
+npm run husky:pre-commit
 { set +x; } 2>/dev/null
 echo
 
