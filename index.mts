@@ -23,9 +23,9 @@ const run = async () => {
   core.setOutput('git-commit-short-hash', gitCommitShortHash);
   core.setOutput('git-commit-long-hash', gitCommitLongHash);
   core.setOutput('git-commit-timestamp', gitCommitTimestamp);
-  core.info(chalk.cyanBright('Git commit short hash:        ') + chalk.greenBright(gitCommitShortHash));
-  core.info(chalk.cyanBright('Git commit long hash:         ') + chalk.greenBright(gitCommitLongHash));
-  core.info(chalk.cyanBright('Git commit timestamp:         ') + chalk.greenBright(gitCommitTimestamp));
+  core.info(chalk.cyanBright('Git commit short hash:         ') + chalk.greenBright(gitCommitShortHash));
+  core.info(chalk.cyanBright('Git commit long hash:          ') + chalk.greenBright(gitCommitLongHash));
+  core.info(chalk.cyanBright('Git commit timestamp:          ') + chalk.greenBright(gitCommitTimestamp));
 
   // Determine if the current Git commit is on the main branch  (even if it is a detached HEAD)
   const mainBranch = core.getInput('main-branch');
@@ -56,7 +56,7 @@ const run = async () => {
   });
   core.debug(`Main branch input: ${mainBranch}; isOnMainBranch: ${isOnMainBranch.toString()}`);
   core.setOutput('git-is-main-branch', isOnMainBranch.toString());
-  core.info(chalk.cyanBright('Is on main branch:            ') + chalk.greenBright(isOnMainBranch.toString()));
+  core.info(chalk.cyanBright('Is on main branch:             ') + chalk.greenBright(isOnMainBranch.toString()));
 
   // Read the Maven project coordinates from the pom.xml file and expose them as action outputs
   const mvnOptions = {silent: true};
@@ -71,9 +71,9 @@ const run = async () => {
   core.setOutput('maven-artifact-group-id', groupId);
   core.setOutput('maven-artifact-artifact-id', artifactId);
   core.setOutput('maven-artifact-version', version);
-  core.info(chalk.cyanBright('Maven artifact Group ID:      ') + chalk.greenBright(groupId));
-  core.info(chalk.cyanBright('Maven artifact Artifact ID:   ') + chalk.greenBright(artifactId));
-  core.info(chalk.cyanBright('Maven artifact Version:       ') + chalk.greenBright(version));
+  core.info(chalk.cyanBright('Maven artifact Group ID:       ') + chalk.greenBright(groupId));
+  core.info(chalk.cyanBright('Maven artifact Artifact ID:    ') + chalk.greenBright(artifactId));
+  core.info(chalk.cyanBright('Maven artifact Version:        ') + chalk.greenBright(version));
 
   // Split Maven version into components and expose them as action outputs
   const numericVersion = version.split('-')[0] || version;
@@ -86,10 +86,10 @@ const run = async () => {
   core.setOutput('maven-artifact-minor-version', mavenArtifactMinorVersion);
   core.setOutput('maven-artifact-patch-version', mavenArtifactPatchVersion);
   core.setOutput('maven-is-snapshot', mavenIsSnapshot);
-  core.info(chalk.cyanBright('Maven artifact Major Version: ') + chalk.greenBright(mavenArtifactMajorVersion));
-  core.info(chalk.cyanBright('Maven artifact Minor Version: ') + chalk.greenBright(mavenArtifactMinorVersion));
-  core.info(chalk.cyanBright('Maven artifact Patch Version: ') + chalk.greenBright(mavenArtifactPatchVersion));
-  core.info(chalk.cyanBright('Maven is SNAPSHOT:            ') + chalk.greenBright(mavenIsSnapshot));
+  core.info(chalk.cyanBright('Maven artifact Major Version:  ') + chalk.greenBright(mavenArtifactMajorVersion));
+  core.info(chalk.cyanBright('Maven artifact Minor Version:  ') + chalk.greenBright(mavenArtifactMinorVersion));
+  core.info(chalk.cyanBright('Maven artifact Patch Version:  ') + chalk.greenBright(mavenArtifactPatchVersion));
+  core.info(chalk.cyanBright('Maven is SNAPSHOT:             ') + chalk.greenBright(mavenIsSnapshot));
 
   // Check if the Maven artifact id is the same as the GitHub repository name; if not, fail with error
   const githubRepositoryName = github.context.repo.repo.split('/').pop() || '';

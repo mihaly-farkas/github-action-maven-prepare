@@ -85,19 +85,19 @@ test('Maven Prepare GitHub Action reads the Maven project coordinates from the p
   expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-patch-version', '3');
   expect(core.setOutput).toHaveBeenCalledWith('maven-is-snapshot', 'true');
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Maven artifact Group ID:      ') + chalk.greenBright(mavenGroupId),
+    chalk.cyanBright('Maven artifact Group ID:       ') + chalk.greenBright(mavenGroupId),
   );
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Maven artifact Artifact ID:   ') + chalk.greenBright(mavenArtifactId),
+    chalk.cyanBright('Maven artifact Artifact ID:    ') + chalk.greenBright(mavenArtifactId),
   );
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Maven artifact Version:       ') + chalk.greenBright(mavenVersion),
+    chalk.cyanBright('Maven artifact Version:        ') + chalk.greenBright(mavenVersion),
   );
-  expect(core.info).toHaveBeenCalledWith(chalk.cyanBright('Maven artifact Major Version: ') + chalk.greenBright('1'));
-  expect(core.info).toHaveBeenCalledWith(chalk.cyanBright('Maven artifact Minor Version: ') + chalk.greenBright('2'));
-  expect(core.info).toHaveBeenCalledWith(chalk.cyanBright('Maven artifact Patch Version: ') + chalk.greenBright('3'));
+  expect(core.info).toHaveBeenCalledWith(chalk.cyanBright('Maven artifact Major Version:  ') + chalk.greenBright('1'));
+  expect(core.info).toHaveBeenCalledWith(chalk.cyanBright('Maven artifact Minor Version:  ') + chalk.greenBright('2'));
+  expect(core.info).toHaveBeenCalledWith(chalk.cyanBright('Maven artifact Patch Version:  ') + chalk.greenBright('3'));
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Maven is SNAPSHOT:            ') + chalk.greenBright('true'),
+    chalk.cyanBright('Maven is SNAPSHOT:             ') + chalk.greenBright('true'),
   );
 });
 
@@ -201,13 +201,13 @@ test('Maven Prepare GitHub Action reads git metadata and exposes them as action 
   expect(core.setOutput).toHaveBeenCalledWith('git-commit-long-hash', gitCommitLongHash);
   expect(core.setOutput).toHaveBeenCalledWith('git-commit-timestamp', gitCommitTimestamp);
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Git commit short hash:        ') + chalk.greenBright(gitCommitShortHash),
+    chalk.cyanBright('Git commit short hash:         ') + chalk.greenBright(gitCommitShortHash),
   );
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Git commit long hash:         ') + chalk.greenBright(gitCommitLongHash),
+    chalk.cyanBright('Git commit long hash:          ') + chalk.greenBright(gitCommitLongHash),
   );
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Git commit timestamp:         ') + chalk.greenBright(gitCommitTimestamp),
+    chalk.cyanBright('Git commit timestamp:          ') + chalk.greenBright(gitCommitTimestamp),
   );
 });
 
@@ -238,7 +238,7 @@ test('Maven Prepare GitHub Action sets git-is-main-branch output to true when cu
   // ASSERT
   expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', 'true');
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Is on main branch:            ') + chalk.greenBright('true'),
+    chalk.cyanBright('Is on main branch:             ') + chalk.greenBright('true'),
   );
 });
 
@@ -268,7 +268,7 @@ test('Maven Prepare GitHub Action sets git-is-main-branch output to false when c
   // ASSERT
   expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', 'false');
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Is on main branch:            ') + chalk.greenBright('false'),
+    chalk.cyanBright('Is on main branch:             ') + chalk.greenBright('false'),
   );
 });
 
@@ -302,7 +302,7 @@ test('Maven Prepare GitHub Action sets git-is-main-branch output to true in deta
   // ASSERT
   expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', 'true');
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Is on main branch:            ') + chalk.greenBright('true'),
+    chalk.cyanBright('Is on main branch:             ') + chalk.greenBright('true'),
   );
 });
 
@@ -336,7 +336,7 @@ test('Maven Prepare GitHub Action sets git-is-main-branch output to false in det
   // ASSERT
   expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', 'false');
   expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Is on main branch:            ') + chalk.greenBright('false'),
+    chalk.cyanBright('Is on main branch:             ') + chalk.greenBright('false'),
   );
 });
 
