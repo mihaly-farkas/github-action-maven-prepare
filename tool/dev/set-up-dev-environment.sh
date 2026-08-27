@@ -22,12 +22,6 @@ source tool/dev/bash_utils/ansi-colors.sh
 
 #######################################################################################################################
 
-echo "${MESSAGE_COLOR}Skipping worktree tracking for ${VALUE_COLOR}node_modules/.package-lock.json${MESSAGE_COLOR}...${NO_COLOR}"
-set -x
-git update-index --skip-worktree node_modules/.package-lock.json
-{ set +x; } 2>/dev/null
-echo
-
 echo "${MESSAGE_COLOR}Setting git hooks path to ${VALUE_COLOR}.husky${MESSAGE_COLOR}...${NO_COLOR}"
 set -x
 git config core.hooksPath .husky

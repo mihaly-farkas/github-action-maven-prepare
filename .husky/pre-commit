@@ -36,15 +36,15 @@ npm install --omit=dev
 { set +x; } 2>/dev/null
 echo
 
-echo "${MESSAGE_COLOR}[pre-commit] Enabling worktree tracking for ${VALUE_COLOR}node_modules/.package-lock.json${MESSAGE_COLOR}...${NO_COLOR}"
-set -x
-git update-index --no-skip-worktree node_modules/.package-lock.json
-{ set +x; } 2>/dev/null
-echo
-
 echo "${MESSAGE_COLOR}[pre-commit] Force adding the ${VALUE_COLOR}node_modules/${MESSAGE_COLOR} folder to the commit...${NO_COLOR}"
 set -x
 git add -f node_modules/
+{ set +x; } 2>/dev/null
+echo
+
+echo "${MESSAGE_COLOR}[pre-commit] Excluding work dirs from the commit...${NO_COLOR}"
+set -x
+git rm --cached -r node_modules/.bin/ node_modules/.package-lock.json node_modules/.vite/ node_modules/.vite-temp/ 2>/dev/null || true
 { set +x; } 2>/dev/null
 echo
 

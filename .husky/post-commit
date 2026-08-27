@@ -24,10 +24,4 @@ npm install
 { set +x; } 2>/dev/null
 echo
 
-echo "${MESSAGE_COLOR}[post-commit] Skipping worktree tracking for ${VALUE_COLOR}node_modules/.package-lock.json${MESSAGE_COLOR}...${NO_COLOR}"
-set -x
-git update-index --skip-worktree node_modules/.package-lock.json
-{ set +x; } 2>/dev/null
-echo
-
 echo "${MESSAGE_COLOR}Git commit result${NO_COLOR}"
