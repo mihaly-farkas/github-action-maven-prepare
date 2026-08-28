@@ -51,6 +51,11 @@ The action exposes the following outputs:
 | `docker-tags`                      | Space-delimited Docker tags generated from version and Git state.         |
 | `docker-metadata-action-tags`      | Newline-delimited `type=raw,value=...` tags for `docker/metadata-action`. |
 
+## 📋 Step Summary
+
+The action also writes a Markdown table to the GitHub Actions step summary (`GITHUB_STEP_SUMMARY`) containing all
+computed output values for quick inspection in workflow runs.
+
 ## ⚠️ Disclaimer & Liability
 
 This is a hobby project. I make no guarantee that it is production-ready. The project may contain experimental or

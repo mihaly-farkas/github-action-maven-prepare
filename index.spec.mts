@@ -1,4 +1,4 @@
-import {test, expect, vi, type Mock} from 'vitest';
+import {expect, type Mock, test, vi} from 'vitest';
 import * as core from '@actions/core';
 import {exec, getExecOutput} from '@actions/exec';
 import * as github from '@actions/github';
@@ -10,6 +10,12 @@ vi.mock('@actions/core', () => ({
   info: vi.fn(),
   debug: vi.fn(),
   getInput: vi.fn(),
+  summary: {
+    addHeading: vi.fn().mockReturnThis(),
+    addRaw: vi.fn().mockReturnThis(),
+    addEOL: vi.fn().mockReturnThis(),
+    write: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 vi.mock('@actions/exec', () => ({
@@ -25,10 +31,25 @@ vi.mock('@actions/github', () => ({
   },
 }));
 
-async function importAction(): Promise<void> {
+const importAction = async (): Promise<void> => {
   vi.resetModules();
   await import('./index.mts');
-}
+};
+
+type ExecOutput = {stdout: string; stderr: string; exitCode: number};
+
+const execOutputOk = (stdout = ''): ExecOutput => ({stdout, stderr: '', exitCode: 0});
+
+const execOutputFailure = (exitCode = 1): ExecOutput => ({stdout: '', stderr: '', exitCode});
+
+const responseKey = (cmd: string, args: string[]): string => `${cmd}::${JSON.stringify(args)}`;
+
+const mockExecOutputResponses = (responses: Record<string, ExecOutput>): void => {
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    const key = responseKey(cmd, args);
+    return Promise.resolve(responses[key] ?? execOutputOk());
+  });
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -345,35 +366,18 @@ test('Maven Prepare GitHub Action sets maven-artifact-publish to false when a re
   const repositoryName = github.context.repo.repo.split('/').pop() || '';
   const mavenGroupId = 'com.example';
   const mavenVersion = '1.2.3';
-
-  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: mavenGroupId, stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) ===
-        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: mavenVersion, stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) ===
-        JSON.stringify(['dependency:get', `-Dartifact=${mavenGroupId}:${repositoryName}:${mavenVersion}`, '--quiet'])
-    ) {
-      return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
-    }
-    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenGroupId),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenVersion),
+    [responseKey('./mvnw', [
+      'dependency:get',
+      `-Dartifact=${mavenGroupId}:${repositoryName}:${mavenVersion}`,
+      '--quiet',
+    ])]: execOutputOk(),
   });
 
   // ACT
@@ -391,35 +395,18 @@ test('Maven Prepare GitHub Action sets maven-artifact-publish to true when a rel
   const repositoryName = github.context.repo.repo.split('/').pop() || '';
   const mavenGroupId = 'com.example';
   const mavenVersion = '1.2.3';
-
-  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: mavenGroupId, stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) ===
-        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: mavenVersion, stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) ===
-        JSON.stringify(['dependency:get', `-Dartifact=${mavenGroupId}:${repositoryName}:${mavenVersion}`, '--quiet'])
-    ) {
-      return Promise.resolve({stdout: '', stderr: '', exitCode: 1});
-    }
-    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenGroupId),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenVersion),
+    [responseKey('./mvnw', [
+      'dependency:get',
+      `-Dartifact=${mavenGroupId}:${repositoryName}:${mavenVersion}`,
+      '--quiet',
+    ])]: execOutputFailure(),
   });
 
   // ACT
@@ -436,25 +423,12 @@ test('Maven Prepare GitHub Action sets git-is-latest-main-branch-commit to true 
   // ARRANGE
   const repositoryName = github.context.repo.repo.split('/').pop() || '';
   const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
-
-  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) ===
-        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
-      return Promise.resolve({stdout: '* main\n', stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'HEAD'])) {
-      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'refs/remotes/origin/main'])) {
-      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
-    }
-    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('git', ['branch', '--all', '--contains', 'HEAD'])]: execOutputOk('* main\n'),
+    [responseKey('git', ['rev-parse', 'HEAD'])]: execOutputOk(gitCommitLongHash),
+    [responseKey('git', ['rev-parse', 'refs/remotes/origin/main'])]: execOutputOk(gitCommitLongHash),
   });
 
   // ACT
@@ -473,40 +447,17 @@ test('Maven Prepare GitHub Action sets docker-tags for snapshot main-branch head
   const mavenVersion = '1.2.3-SNAPSHOT';
   const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
   const gitCommitTimestamp = '1787864679';
-
-  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: 'com.example', stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) ===
-        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: mavenVersion, stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['show', '-s', '--format=%ct', 'HEAD'])) {
-      return Promise.resolve({stdout: gitCommitTimestamp, stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
-      return Promise.resolve({stdout: '* main\n', stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'HEAD'])) {
-      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'refs/remotes/origin/main'])) {
-      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
-    }
-    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])]:
+      execOutputOk('com.example'),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenVersion),
+    [responseKey('git', ['show', '-s', '--format=%ct', 'HEAD'])]: execOutputOk(gitCommitTimestamp),
+    [responseKey('git', ['branch', '--all', '--contains', 'HEAD'])]: execOutputOk('* main\n'),
+    [responseKey('git', ['rev-parse', 'HEAD'])]: execOutputOk(gitCommitLongHash),
+    [responseKey('git', ['rev-parse', 'refs/remotes/origin/main'])]: execOutputOk(gitCommitLongHash),
   });
 
   // ACT
@@ -536,47 +487,19 @@ test('Maven Prepare GitHub Action sets docker-tags for release main-branch head'
   const mavenVersion = '1.2.3';
   const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
   const gitCommitTimestamp = '1787864679';
-
-  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: 'com.example', stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) ===
-        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: mavenVersion, stderr: '', exitCode: 0});
-    }
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) ===
-        JSON.stringify(['dependency:get', `-Dartifact=com.example:${repositoryName}:${mavenVersion}`, '--quiet'])
-    ) {
-      return Promise.resolve({stdout: '', stderr: '', exitCode: 1});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['show', '-s', '--format=%ct', 'HEAD'])) {
-      return Promise.resolve({stdout: gitCommitTimestamp, stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
-      return Promise.resolve({stdout: '* main\n', stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'HEAD'])) {
-      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'refs/remotes/origin/main'])) {
-      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
-    }
-    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])]:
+      execOutputOk('com.example'),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenVersion),
+    [responseKey('./mvnw', ['dependency:get', `-Dartifact=com.example:${repositoryName}:${mavenVersion}`, '--quiet'])]:
+      execOutputFailure(),
+    [responseKey('git', ['show', '-s', '--format=%ct', 'HEAD'])]: execOutputOk(gitCommitTimestamp),
+    [responseKey('git', ['branch', '--all', '--contains', 'HEAD'])]: execOutputOk('* main\n'),
+    [responseKey('git', ['rev-parse', 'HEAD'])]: execOutputOk(gitCommitLongHash),
+    [responseKey('git', ['rev-parse', 'refs/remotes/origin/main'])]: execOutputOk(gitCommitLongHash),
   });
 
   // ACT
@@ -597,4 +520,38 @@ test('Maven Prepare GitHub Action sets docker-tags for release main-branch head'
       'type=raw,value=1.2.3\n' +
       'type=raw,value=1.2.3+1787864679',
   );
+});
+
+test('Maven Prepare GitHub Action writes all outputs to the GitHub step summary', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const mavenVersion = '1.2.3-SNAPSHOT';
+  const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
+  const gitCommitTimestamp = '1787864679';
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])]:
+      execOutputOk('com.example'),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenVersion),
+    [responseKey('git', ['show', '-s', '--format=%ct', 'HEAD'])]: execOutputOk(gitCommitTimestamp),
+    [responseKey('git', ['branch', '--all', '--contains', 'HEAD'])]: execOutputOk('* main\n'),
+    [responseKey('git', ['rev-parse', 'HEAD'])]: execOutputOk(gitCommitLongHash),
+    [responseKey('git', ['rev-parse', '--short', 'HEAD'])]: execOutputOk('abc1234'),
+    [responseKey('git', ['rev-parse', 'refs/remotes/origin/main'])]: execOutputOk(gitCommitLongHash),
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.summary.addHeading).toHaveBeenCalledWith('Prepare Build Environment summary', 2);
+  expect(core.summary.addRaw).toHaveBeenCalledWith('| Output | Value |\n');
+  expect(core.summary.addRaw).toHaveBeenCalledWith('|---|---|\n');
+  expect(core.summary.addRaw).toHaveBeenCalledWith(
+    expect.stringContaining('| `git-is-latest-main-branch-commit` | `true` |'),
+  );
+  expect(core.summary.addRaw).toHaveBeenCalledWith(expect.stringContaining('| `docker-tags` | `unstable beta'));
+  expect(core.summary.write).toHaveBeenCalledTimes(1);
 });

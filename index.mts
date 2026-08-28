@@ -6,6 +6,8 @@ import chalk from 'chalk';
 // Force colored output even when stdout is not detected as a TTY.
 chalk.level = 1;
 
+const escapeSummaryValue = (value: string): string => value.replaceAll('|', String.raw`\|`).replaceAll('\n', '<br>');
+
 const run = async () => {
   // Ensure the Maven Wrapper has executable permissions
   await exec('chmod', ['+x', './mvnw']);
@@ -174,6 +176,36 @@ const run = async () => {
     chalk.cyanBright('Docker metadata-action tags:   ') +
       chalk.greenBright(dockerMetadataActionTags.replaceAll('\n', ' ')),
   );
+
+  // Add a Markdown summary to the GitHub Actions step summary.
+  const summaryRows: Array<[string, string]> = [
+    ['git-commit-short-hash', gitCommitShortHash],
+    ['git-commit-long-hash', gitCommitLongHash],
+    ['git-commit-timestamp', gitCommitTimestamp],
+    ['git-is-main-branch', isOnMainBranch.toString()],
+    ['git-is-latest-main-branch-commit', gitIsLatestMainBranchCommit.toString()],
+    ['maven-artifact-group-id', mavenArtifactGroupId],
+    ['maven-artifact-id', mavenArtifactId],
+    ['maven-artifact-version', mavenArtifactVersion],
+    ['maven-artifact-major-version', mavenArtifactMajorVersion],
+    ['maven-artifact-minor-version', mavenArtifactMinorVersion],
+    ['maven-artifact-patch-version', mavenArtifactPatchVersion],
+    ['maven-is-snapshot', mavenIsSnapshot],
+    ['maven-artifact-publish', mavenArtifactPublish],
+    ['docker-tags', dockerTagsOutput],
+    ['docker-metadata-action-tags', dockerMetadataActionTags],
+  ];
+  const summaryBody = summaryRows
+    .map(([name, value]) => `| \`${name}\` | \`${escapeSummaryValue(value)}\` |`)
+    .join('\n');
+  await core.summary
+    .addHeading('Prepare Build Environment summary', 2)
+    .addRaw('\n')
+    .addRaw('| Output | Value |\n')
+    .addRaw('|---|---|\n')
+    .addRaw(summaryBody)
+    .addEOL()
+    .write();
 };
 
 try {

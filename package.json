@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@types/node": "24.13.3",
+    "globals": "17.11.0",
     "gts": "7.0.0",
     "husky": "9.1.7",
     "lint-staged": "17.4.1",
