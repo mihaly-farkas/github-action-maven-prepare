@@ -58,6 +58,26 @@ const run = async () => {
   core.setOutput('git-is-main-branch', isOnMainBranch.toString());
   core.info(chalk.cyanBright('Is on main branch:             ') + chalk.greenBright(isOnMainBranch.toString()));
 
+  // Determine if HEAD points to the latest commit on the main branch.
+  const mainBranchReferenceCandidates = [`refs/remotes/origin/${mainBranch}`, `refs/heads/${mainBranch}`, mainBranch];
+  let mainBranchHeadHash = '';
+  for (const candidate of mainBranchReferenceCandidates) {
+    const candidateHeadResult = await getExecOutput('git', ['rev-parse', candidate], {
+      ...gitOptions,
+      ignoreReturnCode: true,
+    });
+    if (candidateHeadResult.exitCode === 0) {
+      mainBranchHeadHash = candidateHeadResult.stdout.trim();
+      break;
+    }
+  }
+  const gitIsLatestMainBranchCommit =
+    isOnMainBranch && mainBranchHeadHash.length > 0 && gitCommitLongHash === mainBranchHeadHash;
+  core.setOutput('git-is-latest-main-branch-commit', gitIsLatestMainBranchCommit.toString());
+  core.info(
+    chalk.cyanBright('Is latest main branch commit:  ') + chalk.greenBright(gitIsLatestMainBranchCommit.toString()),
+  );
+
   // Read the Maven project coordinates from the pom.xml file and expose them as action outputs
   const mvnOptions = {silent: true};
   const [groupIdResult, artifactIdResult, versionResult] = await Promise.all([
@@ -115,10 +135,50 @@ const run = async () => {
   }
   core.setOutput('maven-artifact-publish', mavenArtifactPublish);
   core.info(chalk.cyanBright('Maven artifact should publish: ') + chalk.greenBright(mavenArtifactPublish));
+
+  // Determine Docker tags.
+  const dockerTags: string[] = [];
+  const canTagAsMain = isOnMainBranch && gitIsLatestMainBranchCommit;
+  if (mavenIsSnapshot === 'true' && canTagAsMain) {
+    dockerTags.push(
+      'unstable',
+      'beta',
+      `${mavenArtifactMajorVersion}-beta`,
+      `${mavenArtifactMajorVersion}-beta.${gitCommitTimestamp}`,
+      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}-beta`,
+      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}-beta.${gitCommitTimestamp}`,
+      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}-beta`,
+      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}` +
+        `-beta.${gitCommitTimestamp}`,
+    );
+  }
+  if (mavenIsSnapshot === 'false' && canTagAsMain) {
+    dockerTags.push(
+      'latest',
+      mavenArtifactMajorVersion,
+      `${mavenArtifactMajorVersion}+${gitCommitTimestamp}`,
+      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}`,
+      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}+${gitCommitTimestamp}`,
+      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}`,
+      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}+${gitCommitTimestamp}`,
+    );
+  }
+  const dockerTagsOutput = dockerTags.join(' ');
+  core.setOutput('docker-tags', dockerTagsOutput);
+  core.info(chalk.cyanBright('Docker tags:                   ') + chalk.greenBright(dockerTagsOutput));
+
+  // Transform Docker tags to docker-metadata-action format
+  const dockerMetadataActionTags = dockerTags.map(tag => `type=raw,value=${tag}`).join('\n');
+  core.setOutput('docker-metadata-action-tags', dockerMetadataActionTags);
+  core.info(
+    chalk.cyanBright('Docker metadata-action tags:   ') +
+      chalk.greenBright(dockerMetadataActionTags.replaceAll('\n', ' ')),
+  );
 };
 
 try {
   await run();
-} catch (error) {
-  core.setFailed(`Action failed with error: ${error}`);
+} catch (error: unknown) {
+  const errorMessage = error instanceof Error ? error.toString() : String(error);
+  core.setFailed(`Action failed with error: ${errorMessage}`);
 }

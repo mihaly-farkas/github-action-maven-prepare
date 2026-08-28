@@ -431,3 +431,170 @@ test('Maven Prepare GitHub Action sets maven-artifact-publish to true when a rel
     chalk.cyanBright('Maven artifact should publish: ') + chalk.greenBright('true'),
   );
 });
+
+test('Maven Prepare GitHub Action sets git-is-latest-main-branch-commit to true when HEAD equals main branch tip', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
+      return Promise.resolve({stdout: '* main\n', stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'HEAD'])) {
+      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'refs/remotes/origin/main'])) {
+      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('git-is-latest-main-branch-commit', 'true');
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Is latest main branch commit:  ') + chalk.greenBright('true'),
+  );
+});
+
+test('Maven Prepare GitHub Action sets docker-tags for snapshot main-branch head', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const mavenVersion = '1.2.3-SNAPSHOT';
+  const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
+  const gitCommitTimestamp = '1787864679';
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: 'com.example', stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: mavenVersion, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['show', '-s', '--format=%ct', 'HEAD'])) {
+      return Promise.resolve({stdout: gitCommitTimestamp, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
+      return Promise.resolve({stdout: '* main\n', stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'HEAD'])) {
+      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'refs/remotes/origin/main'])) {
+      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith(
+    'docker-tags',
+    'unstable beta 1-beta 1-beta.1787864679 1.2-beta 1.2-beta.1787864679 1.2.3-beta 1.2.3-beta.1787864679',
+  );
+  expect(core.setOutput).toHaveBeenCalledWith(
+    'docker-metadata-action-tags',
+    'type=raw,value=unstable\n' +
+      'type=raw,value=beta\n' +
+      'type=raw,value=1-beta\n' +
+      'type=raw,value=1-beta.1787864679\n' +
+      'type=raw,value=1.2-beta\n' +
+      'type=raw,value=1.2-beta.1787864679\n' +
+      'type=raw,value=1.2.3-beta\n' +
+      'type=raw,value=1.2.3-beta.1787864679',
+  );
+});
+
+test('Maven Prepare GitHub Action sets docker-tags for release main-branch head', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const mavenVersion = '1.2.3';
+  const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
+  const gitCommitTimestamp = '1787864679';
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: 'com.example', stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) === JSON.stringify(['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])
+    ) {
+      return Promise.resolve({stdout: mavenVersion, stderr: '', exitCode: 0});
+    }
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['dependency:get', `-Dartifact=com.example:${repositoryName}:${mavenVersion}`, '--quiet'])
+    ) {
+      return Promise.resolve({stdout: '', stderr: '', exitCode: 1});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['show', '-s', '--format=%ct', 'HEAD'])) {
+      return Promise.resolve({stdout: gitCommitTimestamp, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
+      return Promise.resolve({stdout: '* main\n', stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'HEAD'])) {
+      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
+    }
+    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['rev-parse', 'refs/remotes/origin/main'])) {
+      return Promise.resolve({stdout: gitCommitLongHash, stderr: '', exitCode: 0});
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith(
+    'docker-tags',
+    'latest 1 1+1787864679 1.2 1.2+1787864679 1.2.3 1.2.3+1787864679',
+  );
+  expect(core.setOutput).toHaveBeenCalledWith(
+    'docker-metadata-action-tags',
+    'type=raw,value=latest\n' +
+      'type=raw,value=1\n' +
+      'type=raw,value=1+1787864679\n' +
+      'type=raw,value=1.2\n' +
+      'type=raw,value=1.2+1787864679\n' +
+      'type=raw,value=1.2.3\n' +
+      'type=raw,value=1.2.3+1787864679',
+  );
+});

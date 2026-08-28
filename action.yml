@@ -7,18 +7,36 @@ inputs:
     required: false
     default: "main"
 outputs:
-  maven-artifact-group-id:
-    description: "The Maven project groupId read from pom.xml"
-  maven-artifact-id:
-    description: "The Maven project artifactId read from pom.xml"
-  maven-artifact-version:
-    description: "The Maven project version read from pom.xml"
   git-commit-short-hash:
     description: "The short hash of the current git commit"
   git-commit-long-hash:
     description: "The full hash of the current git commit"
   git-commit-timestamp:
     description: "The Unix timestamp of the current git commit"
+  git-is-main-branch:
+    description: "Whether the current commit is on the configured main branch"
+  git-is-latest-main-branch-commit:
+    description: "Whether the current commit is the latest commit on the main branch"
+  maven-artifact-group-id:
+    description: "The Maven project groupId read from pom.xml"
+  maven-artifact-id:
+    description: "The Maven project artifactId read from pom.xml"
+  maven-artifact-version:
+    description: "The Maven project version read from pom.xml"
+  maven-artifact-major-version:
+    description: "The Maven project major version number"
+  maven-artifact-minor-version:
+    description: "The Maven project minor version number"
+  maven-artifact-patch-version:
+    description: "The Maven project patch version number"
+  maven-is-snapshot:
+    description: "Whether the Maven project version is a SNAPSHOT"
+  maven-artifact-publish:
+    description: "Whether the Maven artifact should be published"
+  docker-tags:
+    description: "Space-delimited Docker image tags derived from version and Git metadata"
+  docker-metadata-action-tags:
+    description: "Newline-delimited docker/metadata-action raw tags derived from docker-tags"
 runs:
   using: "node24"
   main: "index.mts"
