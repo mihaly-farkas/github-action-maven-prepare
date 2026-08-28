@@ -115,8 +115,8 @@ The action exposes the following outputs:
 
     - `<major-version>.<minor-version>.<patch-version>-beta.<commit-timestamp>`: Fixed tag for the specific _SNAPSHOT_ version. The commit timestamp is used as the numeric [SemVer](https://semver.org/#spec-item-11) pre-release identifier so that _SNAPSHOT_ versions can be naturally ordered by commit time.  E.g.:
       - `1.2.3-beta.1787864679` points to the specific `1.2.3-SNAPSHOT` version with commit timestamp `1787864679`.
-      - `2.3.4-beta.1787864679` points to the specific `2.3.4-SNAPSHOT` version with commit timestamp `1787864679`.
-      
+      - `2.3.4-beta.1787864679` points to the specific `2.3.4-SNAPSHOT` version with commit timestamp `1787864679`.<br><br>
+
       > _NOTE:_ The repository branching and pull request policy ensures that commit timestamps remain strictly monotonically increasing and that the same version cannot be used across branches. A Git hash would provide a stable identity, but would not preserve any chronological ordering.
 
   - Every version also gets the following fixed tags for the specific Git commit:
