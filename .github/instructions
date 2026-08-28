@@ -1,3 +1,10 @@
+## Code Changes
+
+If you are making code changes, ALWAYS run `npm run fix-and-verify` before continuing.
+The `npm run fix-and-verify` script automatically fixes linting issues and runs all tests.
+If the `npm run fix-and-verify` script fails, you must fix the issues before continuing.
+If you are making code changes, you must also add or update tests to cover your changes.
+
 ## Commit Message Rules
 
 Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#specification) specification for Git commit messages.
