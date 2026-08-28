@@ -6,7 +6,7 @@ project. It extracts and derives various metadata that can be useful for version
 ## 🛠️ Usage
 
 ```yaml
-- uses: mihaly-farkas/github-action-maven-prepare@v0.1.0
+- uses: mihaly-farkas/github-action-maven-prepare@6303a912efe2f5235b43ad5e534147152a401d9f # v0.1.0 
   with:
     # The main branch name to check against for determining if the current commit is on the main branch. 
     # Default is "main".
@@ -25,7 +25,7 @@ Windows runners are currently not supported.
 
 ```yaml
 - id: prepare-maven
-  uses: mihaly-farkas/github-action-maven-prepare@v0.1.0
+  uses: mihaly-farkas/github-action-maven-prepare@6303a912efe2f5235b43ad5e534147152a401d9f # v0.1.0 
 
 # Build and package the Maven project
 
@@ -41,7 +41,7 @@ Windows runners are currently not supported.
 
 ```yaml
 - id: prepare-maven
-  uses: mihaly-farkas/github-action-maven-prepare@v0.1.0
+  uses: mihaly-farkas/github-action-maven-prepare@6303a912efe2f5235b43ad5e534147152a401d9f # v0.1.0 
 
 - id: docker-metadata
   uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
