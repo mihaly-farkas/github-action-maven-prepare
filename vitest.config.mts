@@ -5,6 +5,12 @@ export default defineConfig({
     globals: true,
     include: ['**/*.spec.mts'],
     exclude: ['**/.local/**', '**/node_modules/**', '**/build/**', '**/dist/**'],
+    tags: [
+      {
+        name: '@since-v0.1.0',
+        description: 'Tests available since version v0.1.0.',
+      },
+    ],
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage',
