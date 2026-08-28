@@ -426,6 +426,7 @@ test('Maven Prepare GitHub Action sets docker-tags for snapshot main-branch head
   // ARRANGE
   const repositoryName = github.context.repo.repo.split('/').pop() || '';
   const mavenVersion = '1.2.3-SNAPSHOT';
+  const gitCommitShortHash = 'abc1234';
   const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
   const gitCommitTimestamp = '1787864679';
   mockExecOutputResponses({
@@ -435,6 +436,7 @@ test('Maven Prepare GitHub Action sets docker-tags for snapshot main-branch head
       execOutputOk(repositoryName),
     [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
       execOutputOk(mavenVersion),
+    [responseKey('git', ['rev-parse', '--short', 'HEAD'])]: execOutputOk(gitCommitShortHash),
     [responseKey('git', ['show', '-s', '--format=%ct', 'HEAD'])]: execOutputOk(gitCommitTimestamp),
     [responseKey('git', ['branch', '--all', '--contains', 'HEAD'])]: execOutputOk('* main\n'),
     [responseKey('git', ['rev-parse', 'HEAD'])]: execOutputOk(gitCommitLongHash),
@@ -447,16 +449,15 @@ test('Maven Prepare GitHub Action sets docker-tags for snapshot main-branch head
   // ASSERT
   expect(core.setOutput).toHaveBeenCalledWith(
     'docker-tags',
-    'unstable beta 1-beta 1.2-beta 1.2.3-beta 1.2.3-beta.1787864679',
+    `unstable 1.2.3-beta 1.2.3-beta.1787864679 sha-${gitCommitShortHash} sha-${gitCommitLongHash}`,
   );
   expect(core.setOutput).toHaveBeenCalledWith(
     'docker-metadata-action-tags',
     'type=raw,value=unstable\n' +
-      'type=raw,value=beta\n' +
-      'type=raw,value=1-beta\n' +
-      'type=raw,value=1.2-beta\n' +
       'type=raw,value=1.2.3-beta\n' +
-      'type=raw,value=1.2.3-beta.1787864679',
+      'type=raw,value=1.2.3-beta.1787864679\n' +
+      `type=raw,value=sha-${gitCommitShortHash}\n` +
+      `type=raw,value=sha-${gitCommitLongHash}`,
   );
 });
 
@@ -464,6 +465,7 @@ test('Maven Prepare GitHub Action sets docker-tags for release main-branch head'
   // ARRANGE
   const repositoryName = github.context.repo.repo.split('/').pop() || '';
   const mavenVersion = '1.2.3';
+  const gitCommitShortHash = 'abc1234';
   const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
   const gitCommitTimestamp = '1787864679';
   mockExecOutputResponses({
@@ -475,6 +477,7 @@ test('Maven Prepare GitHub Action sets docker-tags for release main-branch head'
       execOutputOk(mavenVersion),
     [responseKey('./mvnw', ['dependency:get', `-Dartifact=com.example:${repositoryName}:${mavenVersion}`, '--quiet'])]:
       execOutputFailure(),
+    [responseKey('git', ['rev-parse', '--short', 'HEAD'])]: execOutputOk(gitCommitShortHash),
     [responseKey('git', ['show', '-s', '--format=%ct', 'HEAD'])]: execOutputOk(gitCommitTimestamp),
     [responseKey('git', ['branch', '--all', '--contains', 'HEAD'])]: execOutputOk('* main\n'),
     [responseKey('git', ['rev-parse', 'HEAD'])]: execOutputOk(gitCommitLongHash),
@@ -485,14 +488,57 @@ test('Maven Prepare GitHub Action sets docker-tags for release main-branch head'
   await importAction();
 
   // ASSERT
-  expect(core.setOutput).toHaveBeenCalledWith('docker-tags', 'latest 1 1.2 1.2.3 1.2.3+1787864679');
+  expect(core.setOutput).toHaveBeenCalledWith(
+    'docker-tags',
+    `latest 1 1.2 1.2.3 sha-${gitCommitShortHash} sha-${gitCommitLongHash}`,
+  );
   expect(core.setOutput).toHaveBeenCalledWith(
     'docker-metadata-action-tags',
     'type=raw,value=latest\n' +
       'type=raw,value=1\n' +
       'type=raw,value=1.2\n' +
       'type=raw,value=1.2.3\n' +
-      'type=raw,value=1.2.3+1787864679',
+      `type=raw,value=sha-${gitCommitShortHash}\n` +
+      `type=raw,value=sha-${gitCommitLongHash}`,
+  );
+});
+
+test('Maven Prepare GitHub Action sets only fixed snapshot and sha tags when commit is not latest main branch head', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const mavenVersion = '1.2.3-SNAPSHOT';
+  const gitCommitShortHash = 'abc1234';
+  const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
+  const gitCommitTimestamp = '1787864679';
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])]:
+      execOutputOk('com.example'),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenVersion),
+    [responseKey('git', ['rev-parse', '--short', 'HEAD'])]: execOutputOk(gitCommitShortHash),
+    [responseKey('git', ['show', '-s', '--format=%ct', 'HEAD'])]: execOutputOk(gitCommitTimestamp),
+    [responseKey('git', ['branch', '--all', '--contains', 'HEAD'])]: execOutputOk('* feature/my-branch\n'),
+    [responseKey('git', ['rev-parse', 'HEAD'])]: execOutputOk(gitCommitLongHash),
+    [responseKey('git', ['rev-parse', 'refs/remotes/origin/main'])]: execOutputFailure(),
+    [responseKey('git', ['rev-parse', 'refs/heads/main'])]: execOutputFailure(),
+    [responseKey('git', ['rev-parse', 'main'])]: execOutputFailure(),
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith(
+    'docker-tags',
+    `1.2.3-beta.1787864679 sha-${gitCommitShortHash} sha-${gitCommitLongHash}`,
+  );
+  expect(core.setOutput).toHaveBeenCalledWith(
+    'docker-metadata-action-tags',
+    'type=raw,value=1.2.3-beta.1787864679\n' +
+      `type=raw,value=sha-${gitCommitShortHash}\n` +
+      `type=raw,value=sha-${gitCommitLongHash}`,
   );
 });
 
@@ -587,6 +633,6 @@ test('Maven Prepare GitHub Action writes all outputs to the GitHub step summary'
   expect(core.summary.addRaw).toHaveBeenCalledWith(
     expect.stringContaining('| `git-is-latest-main-branch-commit` | `true` |'),
   );
-  expect(core.summary.addRaw).toHaveBeenCalledWith(expect.stringContaining('| `docker-tags` | `unstable beta'));
+  expect(core.summary.addRaw).toHaveBeenCalledWith(expect.stringContaining('| `docker-tags` | `unstable 1.2.3-beta'));
   expect(core.summary.write).toHaveBeenCalledTimes(1);
 });

@@ -141,26 +141,21 @@ const run = async () => {
   // Determine Docker tags.
   const dockerTags: string[] = [];
   const canTagAsMain = isOnMainBranch && gitIsLatestMainBranchCommit;
+  const releaseTag = `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}`;
+  const snapshotBetaTag = `${releaseTag}-beta`;
   if (mavenIsSnapshot === 'true' && canTagAsMain) {
-    dockerTags.push(
-      'unstable',
-      'beta',
-      `${mavenArtifactMajorVersion}-beta`,
-      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}-beta`,
-      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}-beta`,
-      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}` +
-        `-beta.${gitCommitTimestamp}`,
-    );
+    dockerTags.push('unstable', snapshotBetaTag);
+  }
+  if (mavenIsSnapshot === 'true') {
+    dockerTags.push(`${snapshotBetaTag}.${gitCommitTimestamp}`);
   }
   if (mavenIsSnapshot === 'false' && canTagAsMain) {
-    dockerTags.push(
-      'latest',
-      mavenArtifactMajorVersion,
-      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}`,
-      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}`,
-      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}+${gitCommitTimestamp}`,
-    );
+    dockerTags.push('latest', mavenArtifactMajorVersion, `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}`);
   }
+  if (mavenIsSnapshot === 'false') {
+    dockerTags.push(releaseTag);
+  }
+  dockerTags.push(`sha-${gitCommitShortHash}`, `sha-${gitCommitLongHash}`);
   const dockerTagsOutput = dockerTags.join(' ');
   core.setOutput('docker-tags', dockerTagsOutput);
   core.info(chalk.cyanBright('Docker tags:                   ') + chalk.greenBright(dockerTagsOutput));
