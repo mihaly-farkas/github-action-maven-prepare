@@ -293,73 +293,54 @@ test('Maven Prepare GitHub Action sets git-is-main-branch output to false when c
   );
 });
 
-test('Maven Prepare GitHub Action sets git-is-main-branch output to true in detached HEAD when commit is contained in origin/main', async () => {
-  // ARRANGE
-  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+test.each([
+  {
+    scenario: 'commit is contained in origin/main',
+    gitBranchOutput: '* (HEAD detached at abc1234)\n  remotes/origin/main\n',
+    expectedIsMainBranch: 'true',
+  },
+  {
+    scenario: 'remote branch has no slash after remote name',
+    gitBranchOutput: '  remotes/origin\n',
+    expectedIsMainBranch: 'false',
+  },
+  {
+    scenario: 'commit is not contained in main branch',
+    gitBranchOutput: '* (HEAD detached at abc1234)\n  remotes/origin/feature/my-branch\n',
+    expectedIsMainBranch: 'false',
+  },
+])(
+  'Maven Prepare GitHub Action sets git-is-main-branch output in detached HEAD when $scenario',
+  async ({gitBranchOutput, expectedIsMainBranch}) => {
+    // ARRANGE
+    const repositoryName = github.context.repo.repo.split('/').pop() || '';
 
-  vi.mocked(core.getInput).mockReturnValue('main');
+    vi.mocked(core.getInput).mockReturnValue('main');
 
-  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) ===
-        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
-      return Promise.resolve({
-        stdout: '* (HEAD detached at abc1234)\n  remotes/origin/main\n',
-        stderr: '',
-        exitCode: 0,
-      });
-    }
-    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
-  });
+    (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+      if (
+        cmd === './mvnw' &&
+        JSON.stringify(args) ===
+          JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+      ) {
+        return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
+      }
+      if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
+        return Promise.resolve({stdout: gitBranchOutput, stderr: '', exitCode: 0});
+      }
+      return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+    });
 
-  // ACT
-  await importAction();
+    // ACT
+    await importAction();
 
-  // ASSERT
-  expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', 'true');
-  expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Is on main branch:             ') + chalk.greenBright('true'),
-  );
-});
-
-test('Maven Prepare GitHub Action sets git-is-main-branch output to false in detached HEAD when commit is not contained in main branch', async () => {
-  // ARRANGE
-  const repositoryName = github.context.repo.repo.split('/').pop() || '';
-
-  vi.mocked(core.getInput).mockReturnValue('main');
-
-  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
-    if (
-      cmd === './mvnw' &&
-      JSON.stringify(args) ===
-        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
-    ) {
-      return Promise.resolve({stdout: repositoryName, stderr: '', exitCode: 0});
-    }
-    if (cmd === 'git' && JSON.stringify(args) === JSON.stringify(['branch', '--all', '--contains', 'HEAD'])) {
-      return Promise.resolve({
-        stdout: '* (HEAD detached at abc1234)\n  remotes/origin/feature/my-branch\n',
-        stderr: '',
-        exitCode: 0,
-      });
-    }
-    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
-  });
-
-  // ACT
-  await importAction();
-
-  // ASSERT
-  expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', 'false');
-  expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Is on main branch:             ') + chalk.greenBright('false'),
-  );
-});
+    // ASSERT
+    expect(core.setOutput).toHaveBeenCalledWith('git-is-main-branch', expectedIsMainBranch);
+    expect(core.info).toHaveBeenCalledWith(
+      chalk.cyanBright('Is on main branch:             ') + chalk.greenBright(expectedIsMainBranch),
+    );
+  },
+);
 
 test('Maven Prepare GitHub Action sets maven-artifact-publish to false when a release artifact is already published', async () => {
   // ARRANGE
@@ -513,6 +494,67 @@ test('Maven Prepare GitHub Action sets docker-tags for release main-branch head'
       'type=raw,value=1.2.3\n' +
       'type=raw,value=1.2.3+1787864679',
   );
+});
+
+test('Maven Prepare GitHub Action sets git-is-latest-main-branch-commit to false when all rev-parse candidates fail', async () => {
+  // ARRANGE — covers the false branch of `if (candidateHeadResult.exitCode === 0)` (line 71)
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const gitCommitLongHash = 'abc1234567890abcdef0123456789abfdef01234';
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('git', ['branch', '--all', '--contains', 'HEAD'])]: execOutputOk('* main\n'),
+    [responseKey('git', ['rev-parse', 'HEAD'])]: execOutputOk(gitCommitLongHash),
+    // All three rev-parse candidates for the main branch head fail (exit code 1)
+    [responseKey('git', ['rev-parse', 'refs/remotes/origin/main'])]: execOutputFailure(),
+    [responseKey('git', ['rev-parse', 'refs/heads/main'])]: execOutputFailure(),
+    [responseKey('git', ['rev-parse', 'main'])]: execOutputFailure(),
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('git-is-latest-main-branch-commit', 'false');
+});
+
+test('Maven Prepare GitHub Action sets github repository name to empty string when repo has no slash', async () => {
+  // ARRANGE — covers the `|| ''` fallback on line 117 when pop() returns an empty string
+  vi.mocked(github.context).repo.repo = '';
+
+  (getExecOutput as unknown as Mock).mockImplementation((cmd: string, args: string[]) => {
+    if (
+      cmd === './mvnw' &&
+      JSON.stringify(args) ===
+        JSON.stringify(['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])
+    ) {
+      // artifactId 'my-app' won't match empty githubRepositoryName -> setFailed
+      return Promise.resolve({stdout: 'my-app', stderr: '', exitCode: 0});
+    }
+    return Promise.resolve({stdout: '', stderr: '', exitCode: 0});
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT – the empty githubRepositoryName triggers the mismatch error path
+  expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('does not match GitHub repository name ""'));
+});
+
+test('Maven Prepare GitHub Action fails with a non-Error thrown value', async () => {
+  // ARRANGE — covers the `String(error)` branch in line 210
+  const errorValue = 'plain string error';
+
+  (exec as unknown as Mock).mockImplementationOnce(() => {
+    throw errorValue;
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setFailed).toHaveBeenCalledTimes(1);
+  expect(core.setFailed).toHaveBeenCalledWith(`Action failed with error: ${errorValue}`);
 });
 
 test('Maven Prepare GitHub Action writes all outputs to the GitHub step summary', async () => {

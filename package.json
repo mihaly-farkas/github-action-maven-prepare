@@ -22,7 +22,8 @@
     "test": "npm run clean && npm run build && npm run test:tsc && npm run test:gts && npm run test:unit",
     "test:tsc": "npx tsc --noEmit",
     "test:gts": "npx gts check '**/*.mts' '**/*.mjs'",
-    "test:unit": "npx vitest run",
+    "test:unit": "npx vitest run --coverage",
+    "test:unit:quick": "npx vitest run",
     "fix": "npm run clean && npm run test:tsc && npm run fix:gts",
     "fix:gts": "npx gts fix '**/*.mts' '**/*.mjs'",
     "dependency-management:show-major-updates": "npx npm-check-updates",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@types/node": "24.13.3",
+    "@vitest/coverage-v8": "4.1.11",
     "globals": "17.11.0",
     "gts": "7.0.0",
     "husky": "9.1.7",

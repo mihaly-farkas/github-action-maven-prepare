@@ -5,5 +5,18 @@ export default defineConfig({
     globals: true,
     include: ['**/*.spec.mts'],
     exclude: ['**/.local/**', '**/node_modules/**', '**/build/**', '**/dist/**'],
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: './coverage',
+      reporter: ['text', 'lcov', 'html'],
+      include: ['index.mts'],
+      exclude: ['**/*.spec.mts', '**/.local/**', '**/node_modules/**', '**/build/**', '**/dist/**'],
+      thresholds: {
+        lines: 100,
+        functions: 100,
+        branches: 100,
+        statements: 100,
+      },
+    },
   },
 });

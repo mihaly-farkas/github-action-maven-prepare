@@ -56,6 +56,15 @@ The action exposes the following outputs:
 The action also writes a Markdown table to the GitHub Actions step summary (`GITHUB_STEP_SUMMARY`) containing all
 computed output values for quick inspection in workflow runs.
 
+## 🧪 Testing & Coverage
+
+- `npm test` runs the full verification pipeline and includes unit test coverage.
+- Coverage reports are generated under `coverage/`:
+  - Text summary in terminal output
+  - LCOV report at `coverage/lcov.info`
+  - HTML report at `coverage/index.html`
+- For a quick unit-only run without coverage, use `npm run test:unit:quick`.
+
 ## ⚠️ Disclaimer & Liability
 
 This is a hobby project. I make no guarantee that it is production-ready. The project may contain experimental or
