@@ -29,7 +29,8 @@
     "dependency-management:show-minor-updates": "npx npm-check-updates --target semver",
     "dependency-management:update-minor-dependencies": "npx npm-check-updates --target minor --upgrade && npm install",
     "prepare": "command -v husky >/dev/null && husky || true",
-    "husky:pre-commit": "npm run clean:dir && npm run clean:gts && npm run fix:gts && npx tsc && npm run test:unit"
+    "fix-and-verify": "npm run clean:dir && npm run clean:gts && npm run fix:gts && npx tsc && npm run test:unit",
+    "husky:pre-commit": "npm run fix-and-verify"
   },
   "dependencies": {
     "@actions/core": "3.0.1",
