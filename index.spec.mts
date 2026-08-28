@@ -466,16 +466,14 @@ test('Maven Prepare GitHub Action sets docker-tags for snapshot main-branch head
   // ASSERT
   expect(core.setOutput).toHaveBeenCalledWith(
     'docker-tags',
-    'unstable beta 1-beta 1-beta.1787864679 1.2-beta 1.2-beta.1787864679 1.2.3-beta 1.2.3-beta.1787864679',
+    'unstable beta 1-beta 1.2-beta 1.2.3-beta 1.2.3-beta.1787864679',
   );
   expect(core.setOutput).toHaveBeenCalledWith(
     'docker-metadata-action-tags',
     'type=raw,value=unstable\n' +
       'type=raw,value=beta\n' +
       'type=raw,value=1-beta\n' +
-      'type=raw,value=1-beta.1787864679\n' +
       'type=raw,value=1.2-beta\n' +
-      'type=raw,value=1.2-beta.1787864679\n' +
       'type=raw,value=1.2.3-beta\n' +
       'type=raw,value=1.2.3-beta.1787864679',
   );
@@ -506,17 +504,12 @@ test('Maven Prepare GitHub Action sets docker-tags for release main-branch head'
   await importAction();
 
   // ASSERT
-  expect(core.setOutput).toHaveBeenCalledWith(
-    'docker-tags',
-    'latest 1 1+1787864679 1.2 1.2+1787864679 1.2.3 1.2.3+1787864679',
-  );
+  expect(core.setOutput).toHaveBeenCalledWith('docker-tags', 'latest 1 1.2 1.2.3 1.2.3+1787864679');
   expect(core.setOutput).toHaveBeenCalledWith(
     'docker-metadata-action-tags',
     'type=raw,value=latest\n' +
       'type=raw,value=1\n' +
-      'type=raw,value=1+1787864679\n' +
       'type=raw,value=1.2\n' +
-      'type=raw,value=1.2+1787864679\n' +
       'type=raw,value=1.2.3\n' +
       'type=raw,value=1.2.3+1787864679',
   );

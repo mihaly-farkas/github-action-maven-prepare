@@ -146,9 +146,7 @@ const run = async () => {
       'unstable',
       'beta',
       `${mavenArtifactMajorVersion}-beta`,
-      `${mavenArtifactMajorVersion}-beta.${gitCommitTimestamp}`,
       `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}-beta`,
-      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}-beta.${gitCommitTimestamp}`,
       `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}-beta`,
       `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}` +
         `-beta.${gitCommitTimestamp}`,
@@ -158,9 +156,7 @@ const run = async () => {
     dockerTags.push(
       'latest',
       mavenArtifactMajorVersion,
-      `${mavenArtifactMajorVersion}+${gitCommitTimestamp}`,
       `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}`,
-      `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}+${gitCommitTimestamp}`,
       `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}`,
       `${mavenArtifactMajorVersion}.${mavenArtifactMinorVersion}.${mavenArtifactPatchVersion}+${gitCommitTimestamp}`,
     );
