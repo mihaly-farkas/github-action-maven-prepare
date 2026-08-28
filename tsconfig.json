@@ -13,6 +13,7 @@
     ]
   },
   "include": [
+    "lib/**/*.mts",
     "index.mts",
     "index.spec.mts",
     "vitest.config.mts"

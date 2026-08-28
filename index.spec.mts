@@ -135,7 +135,7 @@ test('Maven Prepare GitHub Action fails when exec throws an error', async () => 
 
   // ASSERT
   expect(core.setFailed).toHaveBeenCalledTimes(1);
-  expect(core.setFailed).toHaveBeenCalledWith(`Action failed with error: Error: ${errorMessage}`);
+  expect(core.setFailed).toHaveBeenCalledWith(`Action failed with Error: ${errorMessage}`);
 });
 
 test('Maven Prepare GitHub Action does not fail when the Maven artifact id matches the GitHub repository name', async () => {
@@ -183,7 +183,7 @@ test('Maven Prepare GitHub Action fails when the Maven artifact id does not matc
 
   // ASSERT
   expect(core.setFailed).toHaveBeenCalledWith(
-    `Maven artifact id "${artifactId}" does not match GitHub repository name "${repoName}".`,
+    `Action failed with Error: Maven artifact id "${artifactId}" does not match GitHub repository name "${repoName}".`,
   );
 });
 
@@ -371,7 +371,114 @@ test('Maven Prepare GitHub Action sets maven-artifact-publish to false when a re
   );
 });
 
-test('Maven Prepare GitHub Action sets maven-artifact-publish to true when a release artifact is not published yet', async () => {
+test('Maven Prepare GitHub Action sets maven-artifact-publish to true when release artifact lookup reports missing artifact', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const mavenGroupId = 'com.example';
+  const mavenVersion = '1.2.3';
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenGroupId),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenVersion),
+    [responseKey('./mvnw', [
+      'dependency:get',
+      `-Dartifact=${mavenGroupId}:${repositoryName}:${mavenVersion}`,
+      '--quiet',
+    ])]: {
+      stdout: '',
+      stderr:
+        '[ERROR] Could not find artifact com.example:github-action-maven-prepare:jar:1.2.3 in central (https://repo.maven.apache.org/maven2)',
+      exitCode: 1,
+    },
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-publish', 'true');
+  expect(core.info).toHaveBeenCalledWith(
+    chalk.cyanBright('Maven artifact should publish: ') + chalk.greenBright('true'),
+  );
+});
+
+test.each([
+  {
+    scenario: 'repository response says artifact was not found in remote repository',
+    stderr: '[ERROR] com.example:github-action-maven-prepare:jar:1.2.3 was not found in https://repo.example.com',
+  },
+  {
+    scenario: 'Maven output contains missing artifact marker',
+    stderr: '[ERROR] Missing:\n----------\n1) com.example:github-action-maven-prepare:jar:1.2.3\n----------',
+  },
+])('Maven Prepare GitHub Action sets maven-artifact-publish to true when $scenario', async ({stderr}) => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const mavenGroupId = 'com.example';
+  const mavenVersion = '1.2.3';
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenGroupId),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenVersion),
+    [responseKey('./mvnw', [
+      'dependency:get',
+      `-Dartifact=${mavenGroupId}:${repositoryName}:${mavenVersion}`,
+      '--quiet',
+    ])]: {
+      stdout: '',
+      stderr,
+      exitCode: 1,
+    },
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-publish', 'true');
+});
+
+test('Maven Prepare GitHub Action fails fast when release artifact lookup fails for non-missing-artifact reasons', async () => {
+  // ARRANGE
+  const repositoryName = github.context.repo.repo.split('/').pop() || '';
+  const mavenGroupId = 'com.example';
+  const mavenVersion = '1.2.3';
+  mockExecOutputResponses({
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.groupId', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenGroupId),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.artifactId', '-q', '-DforceStdout'])]:
+      execOutputOk(repositoryName),
+    [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
+      execOutputOk(mavenVersion),
+    [responseKey('./mvnw', [
+      'dependency:get',
+      `-Dartifact=${mavenGroupId}:${repositoryName}:${mavenVersion}`,
+      '--quiet',
+    ])]: {
+      stdout: '',
+      stderr: '[ERROR] Unauthorized (401) while accessing repository',
+      exitCode: 1,
+    },
+  });
+
+  // ACT
+  await importAction();
+
+  // ASSERT
+  expect(core.setFailed).toHaveBeenCalledTimes(1);
+  expect(core.setFailed).toHaveBeenCalledWith(
+    expect.stringContaining('Failed to determine if release artifact is already published'),
+  );
+  expect(core.setOutput).not.toHaveBeenCalledWith('maven-artifact-publish', 'true');
+});
+
+test('Maven Prepare GitHub Action includes <empty> marker when release artifact lookup fails without output', async () => {
   // ARRANGE
   const repositoryName = github.context.repo.repo.split('/').pop() || '';
   const mavenGroupId = 'com.example';
@@ -394,10 +501,7 @@ test('Maven Prepare GitHub Action sets maven-artifact-publish to true when a rel
   await importAction();
 
   // ASSERT
-  expect(core.setOutput).toHaveBeenCalledWith('maven-artifact-publish', 'true');
-  expect(core.info).toHaveBeenCalledWith(
-    chalk.cyanBright('Maven artifact should publish: ') + chalk.greenBright('true'),
-  );
+  expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('dependency:get output: <empty>'));
 });
 
 test('Maven Prepare GitHub Action sets git-is-latest-main-branch-commit to true when HEAD equals main branch tip', async () => {
@@ -476,7 +580,12 @@ test('Maven Prepare GitHub Action sets docker-tags for release main-branch head'
     [responseKey('./mvnw', ['help:evaluate', '-Dexpression=project.version', '-q', '-DforceStdout'])]:
       execOutputOk(mavenVersion),
     [responseKey('./mvnw', ['dependency:get', `-Dartifact=com.example:${repositoryName}:${mavenVersion}`, '--quiet'])]:
-      execOutputFailure(),
+      {
+        stdout: '',
+        stderr:
+          '[ERROR] Could not find artifact com.example:github-action-maven-prepare:jar:1.2.3 in central (https://repo.maven.apache.org/maven2)',
+        exitCode: 1,
+      },
     [responseKey('git', ['rev-parse', '--short', 'HEAD'])]: execOutputOk(gitCommitShortHash),
     [responseKey('git', ['show', '-s', '--format=%ct', 'HEAD'])]: execOutputOk(gitCommitTimestamp),
     [responseKey('git', ['branch', '--all', '--contains', 'HEAD'])]: execOutputOk('* main\n'),
@@ -600,7 +709,7 @@ test('Maven Prepare GitHub Action fails with a non-Error thrown value', async ()
 
   // ASSERT
   expect(core.setFailed).toHaveBeenCalledTimes(1);
-  expect(core.setFailed).toHaveBeenCalledWith(`Action failed with error: ${errorValue}`);
+  expect(core.setFailed).toHaveBeenCalledWith(`Action failed with ${errorValue}`);
 });
 
 test('Maven Prepare GitHub Action writes all outputs to the GitHub step summary', async () => {

@@ -8,9 +8,16 @@ project. It extracts and derives various metadata that can be useful for version
 ```yaml
 - uses: mihaly-farkas/github-action-maven-prepare@v0.1.0
   with:
-    # The main branch name to check against. Defaults to "main".
+    # The main branch name to check against for determining if the current commit is on the main branch. 
+    # Default is "main".
     main-branch: "main"
 ```
+
+### Runner support
+
+This action currently supports **Linux** and **macOS** GitHub-hosted runners only (for example,`ubuntu-latest` and `macos-latest`).
+
+Windows runners are currently not supported.
 
 ## 🎯 Scenarios
 
@@ -74,7 +81,7 @@ The action exposes the following outputs:
 
 - `maven-is-snapshot`: `true` when Maven version ends with `-SNAPSHOT`, otherwise false.
 
-- `maven-artifact-publish`: `true` when the version is a `-SNAPSHOT`, or when it is a stable release version whose artifact has not been published yet; otherwise `false`.
+- `maven-artifact-publish`: `true` for _SNAPSHOT_ versions and for _stable_ release versions whose artifact has not yet been published; otherwise `false`. The action assumes that it has access to and permission to query the distribution Maven repository for already-published artifacts.
 
 - `docker-tags`: Space-delimited Docker tags generated from the Maven artifact version and Git state. The action generates tags according to the following rules:
 
@@ -126,15 +133,6 @@ The action exposes the following outputs:
 
 The action also writes a Markdown table to the GitHub Actions step summary (`GITHUB_STEP_SUMMARY`) containing all
 computed output values for quick inspection in workflow runs.
-
-## 🧪 Testing & Coverage
-
-- `npm test` runs the full verification pipeline and includes unit test coverage.
-- Coverage reports are generated under `coverage/`:
-  - Text summary in terminal output
-  - LCOV report at `coverage/lcov.info`
-  - HTML report at `coverage/index.html`
-- For a quick unit-only run without coverage, use `npm run test:unit:quick`.
 
 ## ⚠️ Disclaimer & Liability
 
